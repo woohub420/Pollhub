@@ -1,0 +1,74 @@
+.section {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.textarea {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.85rem;
+  resize: none;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.error {
+  color: var(--red);
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+}
+
+.empty {
+  color: var(--text3);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment {
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.commentAuthor {
+  font-size: 0.8rem;
+  color: var(--accent2);
+  font-weight: 600;
+}
+
+.commentBody {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  white-space: pre-wrap;
+}

@@ -1,0 +1,34 @@
+.layout {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: var(--text2);
+  font-size: 0.9rem;
+}
+
+.back:hover {
+  color: var(--accent2);
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.error {
+  color: var(--red);
+  text-align: center;
+  padding: 40px 0;
+}
+
+.empty {
+  color: var(--text3);
+  text-align: center;
+  padding: 40px 0;
+}
