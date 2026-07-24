@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
-import { CATEGORIES } from '../lib/constants.js'
+import {
+  CATEGORIES,
+  MAX_IMAGE_BYTES,
+  MAX_VIDEO_BYTES,
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_VIDEO_TYPES,
+} from '../lib/constants.js'
 import styles from './Modal.module.css'
 
 export default function CreatePollModal({ onClose, onCreated }) {
@@ -9,8 +15,43 @@ export default function CreatePollModal({ onClose, onCreated }) {
   const [question, setQuestion] = useState('')
   const [category, setCategory] = useState(CATEGORIES[0])
   const [options, setOptions] = useState(['', ''])
+  const [mediaFile, setMediaFile] = useState(null)
+  const [mediaPreview, setMediaPreview] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  function handleMediaChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setError('')
+    const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
+    const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type)
+
+    if (!isImage && !isVideo) {
+      setError('Only JPEG, PNG, WebP, GIF images or MP4/WebM videos are allowed.')
+      return
+    }
+    if (isImage && file.size > MAX_IMAGE_BYTES) {
+      setError('Images must be 5MB or smaller.')
+      return
+    }
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      setError('Videos must be 20MB or smaller.')
+      return
+    }
+
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview)
+    setMediaFile(file)
+    setMediaPreview(URL.createObjectURL(file))
+  }
+
+  function removeMedia() {
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview)
+    setMediaFile(null)
+    setMediaPreview('')
+  }
 
   function updateOption(index, value) {
     setOptions((prev) => prev.map((o, i) => (i === index ? value : o)))
@@ -77,6 +118,25 @@ export default function CreatePollModal({ onClose, onCreated }) {
         .insert(filtered.map((label, position) => ({ poll_id: poll.id, label, position })))
       if (optionsErr) throw optionsErr
 
+      if (mediaFile) {
+        const isVideo = ACCEPTED_VIDEO_TYPES.includes(mediaFile.type)
+        const ext = mediaFile.name.split('.').pop()
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+
+        const { error: uploadErr } = await supabase.storage.from('poll-media').upload(path, mediaFile)
+        if (uploadErr) throw uploadErr
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('poll-media').getPublicUrl(path)
+
+        const { error: mediaErr } = await supabase
+          .from('polls')
+          .update({ media_url: publicUrl, media_type: isVideo ? 'video' : 'image' })
+          .eq('id', poll.id)
+        if (mediaErr) throw mediaErr
+      }
+
       onCreated?.(poll.id)
     } catch (err) {
       console.error(err)
@@ -139,6 +199,24 @@ export default function CreatePollModal({ onClose, onCreated }) {
               <button type="button" className="btn btn-ghost btn-sm" onClick={addOption}>
                 + Add option
               </button>
+            )}
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Photo or video (optional)</label>
+            {mediaPreview ? (
+              <div className={styles.optionRow}>
+                {mediaFile.type.startsWith('video/') ? (
+                  <video src={mediaPreview} className={styles.mediaPreview} muted loop playsInline autoPlay />
+                ) : (
+                  <img src={mediaPreview} className={styles.mediaPreview} alt="" />
+                )}
+                <button type="button" className="btn btn-ghost btn-sm" onClick={removeMedia}>
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <input type="file" accept="image/*,video/*" onChange={handleMediaChange} />
             )}
           </div>
 

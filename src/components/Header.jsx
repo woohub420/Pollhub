@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import AuthModal from './AuthModal.jsx'
 import CreatePollModal from './CreatePollModal.jsx'
+import CompleteProfileModal from './CompleteProfileModal.jsx'
 import styles from './Header.module.css'
 
 export default function Header() {
@@ -46,6 +47,7 @@ export default function Header() {
         )}
       </div>
 
+      {user && profile && !profile.username && <CompleteProfileModal />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {showCreate && (
         <CreatePollModal

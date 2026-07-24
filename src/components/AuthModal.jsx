@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import styles from './Modal.module.css'
 
 export default function AuthModal({ onClose }) {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,6 +19,16 @@ export default function AuthModal({ onClose }) {
     if (!/[a-zA-Z]/.test(password)) return 'Password must contain at least one letter.'
     if (!/[0-9]/.test(password)) return 'Password must contain at least one number.'
     return ''
+  }
+
+  async function handleGoogleClick() {
+    setError('')
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+      console.error(err)
+    }
   }
 
   async function handleSubmit(e) {
@@ -101,6 +111,12 @@ export default function AuthModal({ onClose }) {
             </button>
           </div>
         </form>
+
+        <div className={styles.divider}>or</div>
+
+        <button type="button" className={`btn btn-ghost ${styles.fullWidthBtn}`} onClick={handleGoogleClick}>
+          Continue with Google
+        </button>
 
         <div className={styles.switchRow}>
           {mode === 'login' ? (

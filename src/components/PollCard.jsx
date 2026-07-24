@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import CommentSection from './CommentSection.jsx'
+import PollMedia from './PollMedia.jsx'
 import styles from './PollCard.module.css'
 
 export default function PollCard({ poll, onUpdate, defaultShowComments = false }) {
@@ -96,6 +97,8 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
       <Link to={`/poll/${poll.id}`} className={styles.question}>
         {poll.question}
       </Link>
+
+      <PollMedia url={poll.media_url} type={poll.media_type} />
 
       {error && <div className={styles.error}>{error}</div>}
 

@@ -77,12 +77,24 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  async function signInWithGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) throw error
+  }
+
+  async function refreshProfile() {
+    if (user) await loadProfile(user.id)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
   }
 
-  const value = { user, profile, loading, signIn, signUp, signOut }
+  const value = { user, profile, loading, signIn, signUp, signInWithGoogle, signOut, refreshProfile }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
