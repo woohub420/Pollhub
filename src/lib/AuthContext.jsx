@@ -12,9 +12,7 @@ export function AuthProvider({ children }) {
     let active = true
 
     async function init() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
       if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) await loadProfile(session.user.id)
@@ -22,13 +20,16 @@ export function AuthProvider({ children }) {
     }
     init()
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!active) return
       setUser(session?.user ?? null)
       if (session?.user) {
+        if (event === 'SIGNED_IN') await ensureProfile(session.user)
         await loadProfile(session.user.id)
       } else {
         setProfile(null)
       }
+      setLoading(false)
     })
 
     return () => {
@@ -46,26 +47,54 @@ export function AuthProvider({ children }) {
     setProfile(data ?? null)
   }
 
+  async function ensureProfile(user) {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (!existing) {
+      const rawName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split('@')[0] ||
+        'user'
+      const cleanUsername = rawName
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_')
+        .slice(0, 24)
+      const { data: taken } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanUsername)
+        .maybeSingle()
+      const finalUsername = taken
+        ? `${cleanUsername.slice(0, 18)}_${Math.random().toString(36).slice(2, 6)}`
+        : cleanUsername
+      await supabase
+        .from('profiles')
+        .upsert({ id: user.id, username: finalUsername }, { onConflict: 'id' })
+    }
+  }
+
   async function signUp(email, password, username) {
     const cleanUsername = username.toLowerCase().trim()
-
     const { data: existing } = await supabase
       .from('profiles')
       .select('id')
       .eq('username', cleanUsername)
       .maybeSingle()
     if (existing) throw new Error('That username is already taken.')
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username: cleanUsername } },
     })
     if (error) throw error
-
     if (data.user) {
-      // Fallback in case the DB trigger hasn't fired yet (e.g. pending email confirmation)
-      await supabase.from('profiles').upsert({ id: data.user.id, username: cleanUsername }, { onConflict: 'id' })
+      await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, username: cleanUsername }, { onConflict: 'id' })
       await loadProfile(data.user.id)
     }
     return data
@@ -80,7 +109,13 @@ export function AuthProvider({ children }) {
   async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: `${window.location.origin}/`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     })
     if (error) throw error
   }
