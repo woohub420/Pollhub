@@ -17,6 +17,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
   const [showComments, setShowComments] = useState(defaultShowComments)
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [localOptions, setLocalOptions] = useState(poll.options ?? [])
 
   useEffect(() => {
     let active = true
@@ -41,9 +42,46 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
     }
   }, [poll.id, user])
 
-  const totalVotes = poll.options.reduce((sum, o) => sum + (o.vote_count?.[0]?.count ?? 0), 0)
+  useEffect(() => {
+    setLocalOptions(poll.options ?? [])
+  }, [poll.options])
+
+  // Live vote count updates — refetch this poll's options whenever any vote
+  // is inserted for it, so counts update for everyone viewing the card.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`votes-${poll.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'votes', filter: `poll_id=eq.${poll.id}` },
+        async () => {
+          const { data } = await supabase
+            .from('options')
+            .select('id, label, position, vote_count:votes(count)')
+            .eq('poll_id', poll.id)
+          if (data) setLocalOptions(data)
+        },
+      )
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [poll.id])
+
+  const totalVotes = localOptions.reduce((sum, o) => sum + (o.vote_count?.[0]?.count ?? 0), 0)
   const hasVoted = Boolean(myVote)
   const commentCount = poll.comment_count?.[0]?.count ?? 0
+  const isExpired = Boolean(poll.expires_at && new Date(poll.expires_at) < new Date())
+  const showResults = hasVoted
+
+  function timeLeft() {
+    if (!poll.expires_at) return null
+    const diff = new Date(poll.expires_at) - new Date()
+    if (diff <= 0) return 'Closed'
+    const h = Math.floor(diff / 3600000)
+    const m = Math.floor((diff % 3600000) / 60000)
+    if (h > 24) return `${Math.floor(h / 24)}d left`
+    if (h > 0) return `${h}h left`
+    return `${m}m left`
+  }
 
   async function handleVote(optionId) {
     setError('')
@@ -51,6 +89,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
       setError('Log in to vote.')
       return
     }
+    if (isExpired) return
 
     // Option ownership check — never trust the client without verifying membership
     const validOption = poll.options.find((o) => o.id === optionId)
@@ -78,8 +117,6 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
           poll_id: poll.id,
         })
       }
-
-      onUpdate?.()
     } catch (err) {
       console.error(err)
       setError('Something went wrong. Please try again.')
@@ -175,36 +212,40 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
 
       {error && <div className={styles.error}>{error}</div>}
 
+      {poll.expires_at && (
+        <span className={`${styles.expiryBadge} ${isExpired ? styles.expired : ''}`}>
+          {isExpired ? 'Closed' : timeLeft()}
+        </span>
+      )}
+
       <div className={styles.options}>
-        {poll.options
+        {localOptions
           .slice()
           .sort((a, b) => a.position - b.position)
           .map((option) => {
             const count = option.vote_count?.[0]?.count ?? 0
             const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
-            const isMine = myVote === option.id
-
-            if (hasVoted) {
-              return (
-                <div key={option.id} className={styles.resultRow}>
-                  <div className={styles.resultBar} style={{ width: `${pct}%` }} />
-                  <span className={styles.resultLabel}>
-                    {option.label} {isMine && '✓'}
-                  </span>
-                  <span className={styles.resultPct}>{pct}%</span>
-                </div>
-              )
-            }
+            const isChosen = myVote === option.id
+            const votable = !hasVoted && !isExpired && !voting
 
             return (
-              <button
+              <div
                 key={option.id}
-                className={styles.optionButton}
-                onClick={() => handleVote(option.id)}
-                disabled={voting}
+                className={`${styles.option} ${votable ? styles.optionVotable : ''} ${
+                  isChosen ? styles.optionChosen : ''
+                } ${isExpired ? styles.optionDisabled : ''}`}
+                onClick={() => votable && handleVote(option.id)}
               >
-                {option.label}
-              </button>
+                {showResults && <div className={styles.optionBar} style={{ width: `${pct}%` }} />}
+                <span className={styles.optionLabel}>
+                  {option.label} {isChosen && '✓'}
+                </span>
+                {showResults ? (
+                  <span className={styles.optionPct}>{pct}%</span>
+                ) : (
+                  <span className={styles.voteToSeeHint}>Vote to see results</span>
+                )}
+              </div>
             )
           })}
       </div>
