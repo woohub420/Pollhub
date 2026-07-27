@@ -7,6 +7,7 @@ import NotificationSettingsPage from './pages/NotificationSettingsPage.jsx'
 import SearchPage from './pages/SearchPage.jsx'
 import CategoryPage from './pages/CategoryPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import NotFoundPage from './pages/NotFoundPage.jsx'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/c/:slug" element={<CategoryPage />} />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }

@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
+import NotFoundPage from './NotFoundPage.jsx'
 import styles from './UserProfilePage.module.css'
 
 export default function UserProfilePage() {
@@ -141,7 +142,7 @@ export default function UserProfilePage() {
         <span className="spinner" />
       </div>
     )
-  if (notFound) return <div className={styles.empty}>User not found.</div>
+  if (notFound) return <NotFoundPage />
 
   const isOwnProfile = user?.id === profile.id
 

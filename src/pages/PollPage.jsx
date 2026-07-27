@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import PollCard from '../components/PollCard.jsx'
+import NotFoundPage from './NotFoundPage.jsx'
 import styles from './PollPage.module.css'
 
 export default function PollPage() {
@@ -59,7 +60,7 @@ export default function PollPage() {
       </div>
     )
   if (error) return <div className={styles.error}>{error}</div>
-  if (!poll) return <div className={styles.empty}>Poll not found.</div>
+  if (!poll) return <NotFoundPage />
 
   return (
     <div className={styles.layout}>
