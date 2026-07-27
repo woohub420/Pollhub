@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import UserAvatar from '../components/UserAvatar.jsx'
 import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -11,6 +12,9 @@ export default function ProfilePage() {
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('edit') === 'true') {
@@ -18,6 +22,64 @@ export default function ProfilePage() {
       setEditOpen(true)
     }
   }, [searchParams, profile])
+
+  useEffect(() => {
+    async function loadCounts() {
+      if (!profile?.id) return
+      const { count: followers } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', profile.id)
+      const { count: following } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', profile.id)
+      setFollowerCount(followers ?? 0)
+      setFollowingCount(following ?? 0)
+    }
+    loadCounts()
+  }, [profile?.id])
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Avatar must be 5MB or smaller.')
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('JPG, PNG, or WebP only.')
+      return
+    }
+
+    setError('')
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/avatar.${ext}`
+      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (uploadErr) throw uploadErr
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(path)
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`
+
+      const { error: updateErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlWithCacheBust })
+        .eq('id', user.id)
+      if (updateErr) throw updateErr
+
+      await refreshProfile()
+    } catch (err) {
+      console.error(err)
+      setError('Something went wrong uploading your avatar.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   function openEdit() {
     setUsername(profile?.username ?? '')
@@ -86,11 +148,20 @@ export default function ProfilePage() {
       </Link>
 
       <div className={styles.card}>
-        <div className={styles.avatarLarge}>{profile.username?.[0]?.toUpperCase() ?? '?'}</div>
+        <label className={styles.avatarUpload}>
+          <UserAvatar username={profile.username} avatarUrl={profile.avatar_url} size={72} />
+          <div className={styles.avatarOverlay}>{uploading ? '...' : '📷'}</div>
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarUpload} hidden />
+        </label>
         <h2 className={styles.username}>{profile.username ?? '...'}</h2>
         <p className={styles.joined}>
           Joined {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '...'}
         </p>
+
+        <div className={styles.statsRow}>
+          <span>{followerCount} Followers</span>
+          <span>{followingCount} Following</span>
+        </div>
 
         {editOpen ? (
           <form onSubmit={handleSubmit}>

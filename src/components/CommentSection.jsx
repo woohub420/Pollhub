@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import AuthorLine from './AuthorLine.jsx'
 import styles from './CommentSection.module.css'
 
 export default function CommentSection({ pollId, onCommentPosted }) {
@@ -21,7 +22,7 @@ export default function CommentSection({ pollId, onCommentPosted }) {
     try {
       const { data, error: fetchErr } = await supabase
         .from('comments')
-        .select('id, body, created_at, profiles(username)')
+        .select('id, body, created_at, profiles(username, avatar_url)')
         .eq('poll_id', pollId)
         .order('created_at', { ascending: true })
       if (fetchErr) throw fetchErr
@@ -98,7 +99,7 @@ export default function CommentSection({ pollId, onCommentPosted }) {
         <ul className={styles.list}>
           {comments.map((c) => (
             <li key={c.id} className={styles.comment}>
-              <span className={styles.commentAuthor}>u/{c.profiles?.username ?? 'unknown'}</span>
+              <AuthorLine username={c.profiles?.username ?? 'unknown'} avatarUrl={c.profiles?.avatar_url} />
               <p className={styles.commentBody}>{c.body}</p>
             </li>
           ))}

@@ -1,0 +1,11 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.username {
+  font-size: 0.82rem;
+  color: var(--text2);
+  font-weight: 500;
+}

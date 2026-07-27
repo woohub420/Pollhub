@@ -22,18 +22,28 @@
   padding: 24px;
 }
 
-.avatarLarge {
-  width: 64px;
-  height: 64px;
+.avatarUpload {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 1.6rem;
-  margin-bottom: 16px;
+  font-size: 1.3rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.avatarUpload:hover .avatarOverlay {
+  opacity: 1;
 }
 
 .username {
@@ -46,6 +56,14 @@
   color: var(--text2);
   font-size: 0.85rem;
   margin: 0 0 20px;
+}
+
+.statsRow {
+  display: flex;
+  gap: 16px;
+  font-size: 0.88rem;
+  color: var(--text2);
+  margin-bottom: 20px;
 }
 
 .field {

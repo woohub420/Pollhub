@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import AuthorLine from './AuthorLine.jsx'
 import CommentSection from './CommentSection.jsx'
 import PollMedia from './PollMedia.jsx'
 import styles from './PollCard.module.css'
@@ -91,7 +92,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
     <div className={styles.card}>
       <div className={styles.meta}>
         <span className={styles.category}>{poll.category}</span>
-        <span>u/{poll.profiles?.username ?? 'unknown'}</span>
+        <AuthorLine username={poll.profiles?.username ?? 'unknown'} avatarUrl={poll.profiles?.avatar_url} />
       </div>
 
       <Link to={`/poll/${poll.id}`} className={styles.question}>

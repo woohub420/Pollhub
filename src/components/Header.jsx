@@ -54,13 +54,21 @@ export default function Header() {
         ) : user ? (
           <div className={styles.avatarWrapper} ref={dropdownRef}>
             <div className={styles.avatar} onClick={() => setDropdownOpen((o) => !o)}>
-              {profile?.username?.[0]?.toUpperCase() ?? '?'}
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={profile.username} className={styles.avatarImg} />
+              ) : (
+                profile?.username?.[0]?.toUpperCase() ?? '?'
+              )}
             </div>
             {dropdownOpen && (
               <div className={styles.dropdown}>
                 <div className={styles.dropdownHeader}>
                   <div className={styles.dropdownHeaderAvatar}>
-                    {profile?.username?.[0]?.toUpperCase() ?? '?'}
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt={profile.username} className={styles.avatarImg} />
+                    ) : (
+                      profile?.username?.[0]?.toUpperCase() ?? '?'
+                    )}
                   </div>
                   <div className={styles.dropdownHeaderText}>
                     <strong>{profile?.username ?? '...'}</strong>
