@@ -44,7 +44,7 @@ export default function UserProfilePage() {
         .from('polls')
         .select(
           `
-          id, question, category, created_at, media_url, media_type,
+          id, question, category, created_at, author_id, media_url, media_type,
           profiles(username, avatar_url),
           options(id, label, position, vote_count:votes(count)),
           comment_count:comments(count)
@@ -122,6 +122,12 @@ export default function UserProfilePage() {
         if (insErr) throw insErr
         setIsFollowing(true)
         setFollowerCount((c) => c + 1)
+
+        await supabase.from('notifications').insert({
+          user_id: profile.id,
+          actor_id: user.id,
+          type: 'follow',
+        })
       }
     } catch (err) {
       console.error(err)

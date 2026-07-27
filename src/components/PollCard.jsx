@@ -65,6 +65,16 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
       })
       if (voteErr) throw voteErr
       setMyVote(optionId)
+
+      if (poll.author_id && poll.author_id !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: poll.author_id,
+          actor_id: user.id,
+          type: 'vote',
+          poll_id: poll.id,
+        })
+      }
+
       onUpdate?.()
     } catch (err) {
       console.error(err)
@@ -154,7 +164,9 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
         </button>
       </div>
 
-      {showComments && <CommentSection pollId={poll.id} onCommentPosted={onUpdate} />}
+      {showComments && (
+        <CommentSection pollId={poll.id} pollAuthorId={poll.author_id} onCommentPosted={onUpdate} />
+      )}
     </div>
   )
 }

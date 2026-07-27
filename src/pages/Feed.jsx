@@ -35,7 +35,7 @@ export default function Feed() {
         .from('polls')
         .select(
           `
-          id, question, category, created_at, media_url, media_type,
+          id, question, category, created_at, author_id, media_url, media_type,
           profiles(username, avatar_url),
           options(id, label, position, vote_count:votes(count)),
           comment_count:comments(count)

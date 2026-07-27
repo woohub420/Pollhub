@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import AuthModal from './AuthModal.jsx'
 import CreatePollModal from './CreatePollModal.jsx'
 import CompleteProfileModal from './CompleteProfileModal.jsx'
+import NotificationBell from './NotificationBell.jsx'
 import styles from './Header.module.css'
 
 export default function Header() {
@@ -52,7 +53,9 @@ export default function Header() {
         {loading ? (
           <span className="spinner" />
         ) : user ? (
-          <div className={styles.avatarWrapper} ref={dropdownRef}>
+          <>
+            <NotificationBell />
+            <div className={styles.avatarWrapper} ref={dropdownRef}>
             <div className={styles.avatar} onClick={() => setDropdownOpen((o) => !o)}>
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt={profile.username} className={styles.avatarImg} />
@@ -93,13 +96,23 @@ export default function Header() {
                 >
                   ✏️ Edit Profile
                 </div>
+                <div
+                  className={styles.dropdownItem}
+                  onClick={() => {
+                    setDropdownOpen(false)
+                    navigate('/settings/notifications')
+                  }}
+                >
+                  🔔 Notification Settings
+                </div>
                 <div className={styles.dropdownDivider} />
                 <div className={`${styles.dropdownItem} ${styles.danger}`} onClick={handleLogOut}>
                   🚪 Log Out
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          </>
         ) : (
           <button className="btn btn-ghost btn-sm" onClick={() => setShowAuth(true)}>
             Log in
