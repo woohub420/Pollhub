@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { downscaleImage, getVideoDuration } from '../lib/downscaleImage.js'
 import {
   CATEGORIES,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
+  MAX_IMAGES,
+  MAX_VIDEOS,
+  MAX_VIDEO_SECONDS,
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
 } from '../lib/constants.js'
@@ -15,42 +19,75 @@ export default function CreatePollModal({ onClose, onCreated }) {
   const [question, setQuestion] = useState('')
   const [category, setCategory] = useState(CATEGORIES[0])
   const [options, setOptions] = useState(['', ''])
-  const [mediaFile, setMediaFile] = useState(null)
-  const [mediaPreview, setMediaPreview] = useState('')
+  const [mediaFiles, setMediaFiles] = useState([]) // [{ file, preview, isVideo }]
+  const [mediaMode, setMediaMode] = useState(null) // null | 'image' | 'video'
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const imageInputRef = useRef(null)
+  const videoInputRef = useRef(null)
 
-  function handleMediaChange(e) {
-    const file = e.target.files?.[0]
+  async function handleMediaChange(e) {
+    const files = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (!file) return
+    if (files.length === 0) return
 
     setError('')
-    const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
-    const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type)
+    const isVideoInput = ACCEPTED_VIDEO_TYPES.includes(files[0].type)
+    const cap = isVideoInput ? MAX_VIDEOS : MAX_IMAGES
 
-    if (!isImage && !isVideo) {
-      setError('Only JPEG, PNG, WebP, GIF images or MP4/WebM videos are allowed.')
-      return
-    }
-    if (isImage && file.size > MAX_IMAGE_BYTES) {
-      setError('Images must be 5MB or smaller.')
-      return
-    }
-    if (isVideo && file.size > MAX_VIDEO_BYTES) {
-      setError('Videos must be 20MB or smaller.')
+    if (mediaFiles.length + files.length > cap) {
+      setError(isVideoInput ? 'Only 1 video is allowed.' : `You can attach at most ${MAX_IMAGES} photos.`)
       return
     }
 
-    if (mediaPreview) URL.revokeObjectURL(mediaPreview)
-    setMediaFile(file)
-    setMediaPreview(URL.createObjectURL(file))
+    const accepted = []
+    for (const file of files) {
+      const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
+      const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type)
+
+      if (!isImage && !isVideo) {
+        setError('Only JPEG, PNG, WebP, GIF images or MP4/WebM videos are allowed.')
+        return
+      }
+      if (isImage !== !isVideoInput) {
+        setError('A poll can have photos or a video, not both.')
+        return
+      }
+      if (isImage && file.size > MAX_IMAGE_BYTES) {
+        setError('Images must be 5MB or smaller.')
+        return
+      }
+      if (isVideo && file.size > MAX_VIDEO_BYTES) {
+        setError('Videos must be 20MB or smaller.')
+        return
+      }
+      if (isVideo) {
+        try {
+          const duration = await getVideoDuration(file)
+          if (duration > MAX_VIDEO_SECONDS) {
+            setError(`Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter.`)
+            return
+          }
+        } catch {
+          setError('Could not read that video file.')
+          return
+        }
+      }
+
+      accepted.push({ file, preview: URL.createObjectURL(file), isVideo })
+    }
+
+    setMediaMode(isVideoInput ? 'video' : 'image')
+    setMediaFiles((prev) => [...prev, ...accepted])
   }
 
-  function removeMedia() {
-    if (mediaPreview) URL.revokeObjectURL(mediaPreview)
-    setMediaFile(null)
-    setMediaPreview('')
+  function removeMedia(index) {
+    setMediaFiles((prev) => {
+      URL.revokeObjectURL(prev[index].preview)
+      const next = prev.filter((_, i) => i !== index)
+      if (next.length === 0) setMediaMode(null)
+      return next
+    })
   }
 
   function updateOption(index, value) {
@@ -118,22 +155,25 @@ export default function CreatePollModal({ onClose, onCreated }) {
         .insert(filtered.map((label, position) => ({ poll_id: poll.id, label, position })))
       if (optionsErr) throw optionsErr
 
-      if (mediaFile) {
-        const isVideo = ACCEPTED_VIDEO_TYPES.includes(mediaFile.type)
-        const ext = mediaFile.name.split('.').pop()
-        const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+      if (mediaFiles.length > 0) {
+        const rows = []
+        for (let i = 0; i < mediaFiles.length; i++) {
+          const { file, isVideo } = mediaFiles[i]
+          const uploadFile = isVideo ? file : await downscaleImage(file)
+          const ext = uploadFile.name.split('.').pop()
+          const path = `${user.id}/${crypto.randomUUID()}.${ext}`
 
-        const { error: uploadErr } = await supabase.storage.from('poll-media').upload(path, mediaFile)
-        if (uploadErr) throw uploadErr
+          const { error: uploadErr } = await supabase.storage.from('poll-media').upload(path, uploadFile)
+          if (uploadErr) throw uploadErr
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('poll-media').getPublicUrl(path)
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('poll-media').getPublicUrl(path)
 
-        const { error: mediaErr } = await supabase
-          .from('polls')
-          .update({ media_url: publicUrl, media_type: isVideo ? 'video' : 'image' })
-          .eq('id', poll.id)
+          rows.push({ poll_id: poll.id, url: publicUrl, media_type: isVideo ? 'video' : 'image', position: i })
+        }
+
+        const { error: mediaErr } = await supabase.from('poll_media').insert(rows)
         if (mediaErr) throw mediaErr
       }
 
@@ -203,21 +243,59 @@ export default function CreatePollModal({ onClose, onCreated }) {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Photo or video (optional)</label>
-            {mediaPreview ? (
-              <div className={styles.optionRow}>
-                {mediaFile.type.startsWith('video/') ? (
-                  <video src={mediaPreview} className={styles.mediaPreview} muted loop playsInline autoPlay />
-                ) : (
-                  <img src={mediaPreview} className={styles.mediaPreview} alt="" />
-                )}
-                <button type="button" className="btn btn-ghost btn-sm" onClick={removeMedia}>
-                  Remove
-                </button>
+            <label className={styles.label}>
+              Photos ({MAX_IMAGES} max) or a video ({MAX_VIDEO_SECONDS}s max) — optional, not both
+            </label>
+            {mediaFiles.length > 0 && (
+              <div className={styles.optionRow} style={{ flexWrap: 'wrap' }}>
+                {mediaFiles.map((item, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    {item.isVideo ? (
+                      <video src={item.preview} className={styles.mediaPreview} muted loop playsInline autoPlay />
+                    ) : (
+                      <img src={item.preview} className={styles.mediaPreview} alt="" />
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ position: 'absolute', top: 2, right: 2 }}
+                      onClick={() => removeMedia(i)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <input type="file" accept="image/*,video/*" onChange={handleMediaChange} />
             )}
+
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleMediaChange}
+              style={{ display: 'none' }}
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleMediaChange}
+              style={{ display: 'none' }}
+            />
+
+            <div className={styles.optionRow}>
+              {(mediaMode === null || mediaMode === 'image') && mediaFiles.length < MAX_IMAGES && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => imageInputRef.current?.click()}>
+                  + Add photo
+                </button>
+              )}
+              {mediaMode === null && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => videoInputRef.current?.click()}>
+                  + Add video
+                </button>
+              )}
+            </div>
           </div>
 
           <div className={styles.actionsRow}>

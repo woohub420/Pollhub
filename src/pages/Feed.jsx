@@ -31,7 +31,7 @@ export default function Feed() {
     setLoading(true)
     setError('')
     try {
-      const { data, error: fetchErr } = await supabase
+      const { data: pollsData, error: pollsErr } = await supabase
         .from('polls')
         .select(
           `
@@ -43,8 +43,25 @@ export default function Feed() {
         )
         .order('created_at', { ascending: false })
         .limit(100)
-      if (fetchErr) throw fetchErr
-      setPolls(data ?? [])
+      if (pollsErr) throw pollsErr
+
+      // PostgREST isn't recognizing the poll_media foreign key relationship
+      // for embedding, so fetch it separately and merge instead.
+      const pollIds = (pollsData ?? []).map((p) => p.id)
+      const mediaMap = {}
+      if (pollIds.length > 0) {
+        const { data: mediaData } = await supabase
+          .from('poll_media')
+          .select('id, poll_id, url, media_type, position')
+          .in('poll_id', pollIds)
+        ;(mediaData ?? []).forEach((m) => {
+          if (!mediaMap[m.poll_id]) mediaMap[m.poll_id] = []
+          mediaMap[m.poll_id].push(m)
+        })
+      }
+
+      const merged = (pollsData ?? []).map((p) => ({ ...p, poll_media: mediaMap[p.id] ?? [] }))
+      setPolls(merged)
     } catch (err) {
       console.error(err)
       setError('Something went wrong loading the feed.')

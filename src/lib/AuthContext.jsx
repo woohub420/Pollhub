@@ -50,30 +50,15 @@ export function AuthProvider({ children }) {
   async function ensureProfile(user) {
     const { data: existing } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, username')
       .eq('id', user.id)
       .maybeSingle()
+
     if (!existing) {
-      const rawName =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split('@')[0] ||
-        'user'
-      const cleanUsername = rawName
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, '_')
-        .slice(0, 24)
-      const { data: taken } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', cleanUsername)
-        .maybeSingle()
-      const finalUsername = taken
-        ? `${cleanUsername.slice(0, 18)}_${Math.random().toString(36).slice(2, 6)}`
-        : cleanUsername
+      // Insert profile with NULL username — CompleteProfileModal will prompt them to choose
       await supabase
         .from('profiles')
-        .upsert({ id: user.id, username: finalUsername }, { onConflict: 'id' })
+        .upsert({ id: user.id, username: null }, { onConflict: 'id' })
     }
   }
 

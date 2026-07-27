@@ -98,7 +98,11 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
         {poll.question}
       </Link>
 
-      <PollMedia url={poll.media_url} type={poll.media_type} />
+      <PollMedia
+        media={poll.poll_media?.slice().sort((a, b) => a.position - b.position)}
+        url={poll.media_url}
+        type={poll.media_type}
+      />
 
       {error && <div className={styles.error}>{error}</div>}
 

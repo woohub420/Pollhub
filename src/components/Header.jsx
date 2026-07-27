@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import AuthModal from './AuthModal.jsx'
@@ -10,7 +10,19 @@ export default function Header() {
   const { user, profile, loading, signOut } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   function handleNewPoll() {
     if (!user) {
@@ -18,6 +30,12 @@ export default function Header() {
       return
     }
     setShowCreate(true)
+  }
+
+  async function handleLogOut() {
+    setDropdownOpen(false)
+    await signOut()
+    navigate('/')
   }
 
   return (
@@ -34,11 +52,45 @@ export default function Header() {
         {loading ? (
           <span className="spinner" />
         ) : user ? (
-          <div className={styles.userBox}>
-            <span className={styles.username}>{profile?.username ?? '...'}</span>
-            <button className="btn btn-ghost btn-sm" onClick={signOut}>
-              Log out
-            </button>
+          <div className={styles.avatarWrapper} ref={dropdownRef}>
+            <div className={styles.avatar} onClick={() => setDropdownOpen((o) => !o)}>
+              {profile?.username?.[0]?.toUpperCase() ?? '?'}
+            </div>
+            {dropdownOpen && (
+              <div className={styles.dropdown}>
+                <div className={styles.dropdownHeader}>
+                  <div className={styles.dropdownHeaderAvatar}>
+                    {profile?.username?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                  <div className={styles.dropdownHeaderText}>
+                    <strong>{profile?.username ?? '...'}</strong>
+                    <span>u/{profile?.username ?? '...'}</span>
+                  </div>
+                </div>
+                <div
+                  className={styles.dropdownItem}
+                  onClick={() => {
+                    setDropdownOpen(false)
+                    navigate('/profile')
+                  }}
+                >
+                  👤 View Profile
+                </div>
+                <div
+                  className={styles.dropdownItem}
+                  onClick={() => {
+                    setDropdownOpen(false)
+                    navigate('/profile?edit=true')
+                  }}
+                >
+                  ✏️ Edit Profile
+                </div>
+                <div className={styles.dropdownDivider} />
+                <div className={`${styles.dropdownItem} ${styles.danger}`} onClick={handleLogOut}>
+                  🚪 Log Out
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <button className="btn btn-ghost btn-sm" onClick={() => setShowAuth(true)}>

@@ -18,7 +18,7 @@ export default function PollPage() {
     setLoading(true)
     setError('')
     try {
-      const { data, error: fetchErr } = await supabase
+      const { data: pollData, error: pollErr } = await supabase
         .from('polls')
         .select(
           `
@@ -30,8 +30,20 @@ export default function PollPage() {
         )
         .eq('id', id)
         .maybeSingle()
-      if (fetchErr) throw fetchErr
-      setPoll(data)
+      if (pollErr) throw pollErr
+
+      // PostgREST isn't recognizing the poll_media foreign key relationship
+      // for embedding, so fetch it separately and merge instead.
+      let media = []
+      if (pollData) {
+        const { data: mediaData } = await supabase
+          .from('poll_media')
+          .select('id, poll_id, url, media_type, position')
+          .eq('poll_id', pollData.id)
+        media = mediaData ?? []
+      }
+
+      setPoll(pollData ? { ...pollData, poll_media: media } : null)
     } catch (err) {
       console.error(err)
       setError('Something went wrong loading this poll.')
