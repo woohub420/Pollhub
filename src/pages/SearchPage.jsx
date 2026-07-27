@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
+import { SearchIcon } from '../components/icons.jsx'
 import styles from './SearchPage.module.css'
 
 const TABS = ['polls', 'users', 'categories']
@@ -123,7 +124,7 @@ export default function SearchPage() {
     <div className={styles.page}>
       <div className={styles.container}>
         <form className={styles.searchBar} onSubmit={handleSearch}>
-          <span className={styles.searchIcon}>🔍</span>
+          <SearchIcon className={styles.searchIcon} />
           <input
             className={styles.searchInput}
             value={input}
@@ -180,7 +181,7 @@ export default function SearchPage() {
 
         {!query && tab !== 'categories' && (
           <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>🔍</span>
+            <SearchIcon size={32} className={styles.emptyIcon} />
             <p>Search for polls or users</p>
           </div>
         )}

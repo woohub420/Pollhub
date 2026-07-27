@@ -6,6 +6,7 @@ import AuthModal from './AuthModal.jsx'
 import CreatePollModal from './CreatePollModal.jsx'
 import CompleteProfileModal from './CompleteProfileModal.jsx'
 import NotificationBell from './NotificationBell.jsx'
+import { SearchIcon, BellIcon, UserIcon, EditIcon, LogOutIcon } from './icons.jsx'
 import styles from './Header.module.css'
 
 export default function Header() {
@@ -99,7 +100,7 @@ export default function Header() {
 
       <div className={styles.searchWrapper} ref={searchRef}>
         <form className={styles.headerSearch} onSubmit={handleSearch}>
-          <span className={styles.headerSearchIcon}>🔍</span>
+          <SearchIcon className={styles.headerSearchIcon} />
           <input
             className={styles.headerSearchInput}
             value={searchInput}
@@ -201,6 +202,10 @@ export default function Header() {
       </div>
 
       <div className={styles.actions}>
+        <button className={styles.mobileSearchBtn} onClick={() => navigate('/search')} aria-label="Search">
+          <SearchIcon size={19} />
+        </button>
+
         <button className="btn btn-accent btn-sm" onClick={handleNewPoll}>
           + New Poll
         </button>
@@ -240,7 +245,7 @@ export default function Header() {
                     navigate('/profile')
                   }}
                 >
-                  👤 View Profile
+                  <UserIcon size={15} /> View Profile
                 </div>
                 <div
                   className={styles.dropdownItem}
@@ -249,7 +254,7 @@ export default function Header() {
                     navigate('/profile?edit=true')
                   }}
                 >
-                  ✏️ Edit Profile
+                  <EditIcon size={15} /> Edit Profile
                 </div>
                 {profile?.is_admin && (
                   <div
@@ -269,11 +274,11 @@ export default function Header() {
                     navigate('/settings/notifications')
                   }}
                 >
-                  🔔 Notification Settings
+                  <BellIcon size={15} /> Notification Settings
                 </div>
                 <div className={styles.dropdownDivider} />
                 <div className={`${styles.dropdownItem} ${styles.danger}`} onClick={handleLogOut}>
-                  🚪 Log Out
+                  <LogOutIcon size={15} /> Log Out
                 </div>
               </div>
             )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { BellIcon } from './icons.jsx'
 import styles from './NotificationBell.module.css'
 
 export default function NotificationBell() {
@@ -118,7 +119,7 @@ export default function NotificationBell() {
   return (
     <div className={styles.wrapper} ref={ref}>
       <button className={styles.bell} onClick={handleOpen} aria-label="Notifications">
-        🔔
+        <BellIcon size={19} />
         {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
 

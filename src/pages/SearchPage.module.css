@@ -205,3 +205,13 @@
   justify-content: center;
   padding: 48px;
 }
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 4px;
+  }
+
+  .searchBar {
+    border-radius: 12px;
+  }
+}
