@@ -144,6 +144,12 @@
   color: var(--accent2);
 }
 
+.likeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .footerBtnLiked {
   color: var(--red);
 }

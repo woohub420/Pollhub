@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
 import CommentSection from './CommentSection.jsx'
+import { HeartIcon } from './icons.jsx'
 import PollMedia from './PollMedia.jsx'
 import ReportModal from './ReportModal.jsx'
 import styles from './PollCard.module.css'
@@ -313,10 +314,10 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
       <div className={styles.footer}>
         <span className={styles.stat}>{totalVotes} votes</span>
         <button
-          className={`${styles.footerBtn} ${liked ? styles.footerBtnLiked : ''}`}
+          className={`${styles.footerBtn} ${styles.likeBtn} ${liked ? styles.footerBtnLiked : ''}`}
           onClick={handleLike}
         >
-          {liked ? '❤️' : '🤍'} {likeCount}
+          <HeartIcon size={15} filled={liked} /> {likeCount}
         </button>
         <button className={styles.footerBtn} onClick={() => setShowComments((v) => !v)}>
           {commentCount} comments
