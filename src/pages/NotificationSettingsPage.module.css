@@ -59,9 +59,12 @@
 }
 
 .icon {
-  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
-  text-align: center;
+  height: 32px;
+  color: var(--text2);
 }
 
 .rowText {

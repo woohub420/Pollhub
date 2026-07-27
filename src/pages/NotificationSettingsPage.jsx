@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { VoteIcon, HeartIcon, UserIcon, CommentIcon, ReplyIcon } from '../components/icons.jsx'
 import styles from './NotificationSettingsPage.module.css'
 
 export default function NotificationSettingsPage() {
@@ -46,11 +47,11 @@ export default function NotificationSettingsPage() {
   if (loading) return <div className={styles.loading}>Loading...</div>
 
   const items = [
-    { key: 'notify_vote', icon: '🗳️', label: 'Votes', description: 'When someone votes on your poll' },
-    { key: 'notify_like', icon: '❤️', label: 'Likes', description: 'When someone likes your poll' },
-    { key: 'notify_follow', icon: '👤', label: 'New Followers', description: 'When someone follows you' },
-    { key: 'notify_comment', icon: '💬', label: 'Comments', description: 'When someone comments on your poll' },
-    { key: 'notify_reply', icon: '↩️', label: 'Replies', description: 'When someone replies to your comment' },
+    { key: 'notify_vote', icon: <VoteIcon size={18} />, label: 'Votes', description: 'When someone votes on your poll' },
+    { key: 'notify_like', icon: <HeartIcon size={18} />, label: 'Likes', description: 'When someone likes your poll' },
+    { key: 'notify_follow', icon: <UserIcon size={18} />, label: 'New Followers', description: 'When someone follows you' },
+    { key: 'notify_comment', icon: <CommentIcon size={18} />, label: 'Comments', description: 'When someone comments on your poll' },
+    { key: 'notify_reply', icon: <ReplyIcon size={18} />, label: 'Replies', description: 'When someone replies to your comment' },
   ]
 
   return (
