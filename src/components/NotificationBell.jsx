@@ -63,6 +63,7 @@ export default function NotificationBell() {
     const filtered = (data ?? []).filter((n) => {
       if (!settingsData) return true
       if (n.type === 'vote' && !settingsData.notify_vote) return false
+      if (n.type === 'like' && !settingsData.notify_like) return false
       if (n.type === 'follow' && !settingsData.notify_follow) return false
       if (n.type === 'comment' && !settingsData.notify_comment) return false
       if (n.type === 'reply' && !settingsData.notify_reply) return false
@@ -93,6 +94,8 @@ export default function NotificationBell() {
     switch (n.type) {
       case 'vote':
         return `${actor} voted on your poll`
+      case 'like':
+        return `${actor} liked your poll`
       case 'follow':
         return `${actor} followed you`
       case 'comment':

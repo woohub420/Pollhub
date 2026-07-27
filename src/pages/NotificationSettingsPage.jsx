@@ -9,6 +9,7 @@ export default function NotificationSettingsPage() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState({
     notify_vote: true,
+    notify_like: true,
     notify_follow: true,
     notify_comment: true,
     notify_reply: true,
@@ -46,6 +47,7 @@ export default function NotificationSettingsPage() {
 
   const items = [
     { key: 'notify_vote', icon: '🗳️', label: 'Votes', description: 'When someone votes on your poll' },
+    { key: 'notify_like', icon: '❤️', label: 'Likes', description: 'When someone likes your poll' },
     { key: 'notify_follow', icon: '👤', label: 'New Followers', description: 'When someone follows you' },
     { key: 'notify_comment', icon: '💬', label: 'Comments', description: 'When someone comments on your poll' },
     { key: 'notify_reply', icon: '↩️', label: 'Replies', description: 'When someone replies to your comment' },

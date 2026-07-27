@@ -182,6 +182,24 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
         console.error(insErr)
         setLiked(false)
         setLikeCount((c) => c - 1)
+        return
+      }
+
+      if (poll.author_id && poll.author_id !== user.id) {
+        const { data: settings } = await supabase
+          .from('notification_settings')
+          .select('notify_like')
+          .eq('user_id', poll.author_id)
+          .maybeSingle()
+
+        if (!settings || settings.notify_like !== false) {
+          await supabase.from('notifications').insert({
+            user_id: poll.author_id,
+            actor_id: user.id,
+            type: 'like',
+            poll_id: poll.id,
+          })
+        }
       }
     }
   }
