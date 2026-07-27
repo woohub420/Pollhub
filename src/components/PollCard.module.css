@@ -47,27 +47,23 @@
   margin-bottom: 14px;
 }
 
-.optionButton {
-  text-align: left;
-  padding: 10px 14px;
+.expiryBadge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--amber);
+  background: rgba(251, 191, 36, 0.1);
+  border-radius: 99px;
+  padding: 2px 10px;
+  margin-bottom: 8px;
+}
+
+.expired {
+  color: var(--text2);
   background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.9rem;
 }
 
-.optionButton:hover:not(:disabled) {
-  border-color: var(--accent);
-}
-
-.optionButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.resultRow {
+.option {
   position: relative;
   padding: 10px 14px;
   background: var(--bg3);
@@ -79,22 +75,48 @@
   font-size: 0.9rem;
 }
 
-.resultBar {
+.optionVotable {
+  cursor: pointer;
+}
+
+.optionVotable:hover {
+  border-color: var(--accent);
+}
+
+.optionChosen {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.optionDisabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.optionBar {
   position: absolute;
   inset: 0;
   background: var(--accent-bg);
   z-index: 0;
 }
 
-.resultLabel,
-.resultPct {
+.optionLabel,
+.optionPct {
   position: relative;
   z-index: 1;
 }
 
-.resultPct {
+.optionPct {
   color: var(--text2);
   font-weight: 600;
+}
+
+.voteToSeeHint {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  color: var(--text2);
+  font-style: italic;
 }
 
 .footer {
@@ -120,6 +142,14 @@
 
 .footerBtn:hover {
   color: var(--accent2);
+}
+
+.footerBtnLiked {
+  color: var(--red);
+}
+
+.footerBtnLiked:hover {
+  color: var(--red);
 }
 
 .menuWrapper {

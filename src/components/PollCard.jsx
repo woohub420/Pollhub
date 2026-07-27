@@ -18,6 +18,8 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [localOptions, setLocalOptions] = useState(poll.options ?? [])
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -46,20 +48,47 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
     setLocalOptions(poll.options ?? [])
   }, [poll.options])
 
-  // Live vote count updates — refetch this poll's options whenever any vote
-  // is inserted for it, so counts update for everyone viewing the card.
+  useEffect(() => {
+    let active = true
+
+    async function loadLikes() {
+      const { count } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('poll_id', poll.id)
+      if (active) setLikeCount(count ?? 0)
+
+      if (!user) {
+        if (active) setLiked(false)
+        return
+      }
+      const { data } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('poll_id', poll.id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (active) setLiked(!!data)
+    }
+    loadLikes()
+
+    return () => {
+      active = false
+    }
+  }, [poll.id, user])
+
   useEffect(() => {
     const channel = supabase
-      .channel(`votes-${poll.id}`)
+      .channel(`likes-${poll.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'votes', filter: `poll_id=eq.${poll.id}` },
+        { event: '*', schema: 'public', table: 'likes', filter: `poll_id=eq.${poll.id}` },
         async () => {
-          const { data } = await supabase
-            .from('options')
-            .select('id, label, position, vote_count:votes(count)')
+          const { count } = await supabase
+            .from('likes')
+            .select('*', { count: 'exact', head: true })
             .eq('poll_id', poll.id)
-          if (data) setLocalOptions(data)
+          setLikeCount(count ?? 0)
         },
       )
       .subscribe()
@@ -122,6 +151,37 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
       setError('Something went wrong. Please try again.')
     } finally {
       setVoting(false)
+    }
+  }
+
+  async function handleLike() {
+    if (!user) {
+      setError('Log in to like.')
+      return
+    }
+
+    if (liked) {
+      setLiked(false)
+      setLikeCount((c) => c - 1)
+      const { error: delErr } = await supabase
+        .from('likes')
+        .delete()
+        .eq('poll_id', poll.id)
+        .eq('user_id', user.id)
+      if (delErr) {
+        console.error(delErr)
+        setLiked(true)
+        setLikeCount((c) => c + 1)
+      }
+    } else {
+      setLiked(true)
+      setLikeCount((c) => c + 1)
+      const { error: insErr } = await supabase.from('likes').insert({ poll_id: poll.id, user_id: user.id })
+      if (insErr) {
+        console.error(insErr)
+        setLiked(false)
+        setLikeCount((c) => c - 1)
+      }
     }
   }
 
@@ -252,6 +312,12 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
 
       <div className={styles.footer}>
         <span className={styles.stat}>{totalVotes} votes</span>
+        <button
+          className={`${styles.footerBtn} ${liked ? styles.footerBtnLiked : ''}`}
+          onClick={handleLike}
+        >
+          {liked ? '❤️' : '🤍'} {likeCount}
+        </button>
         <button className={styles.footerBtn} onClick={() => setShowComments((v) => !v)}>
           {commentCount} comments
         </button>

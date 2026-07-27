@@ -46,9 +46,11 @@ export default function UserProfilePage() {
         .select(
           `
           id, question, category, created_at, author_id, media_url, media_type,
+          expires_at,
           profiles(username, avatar_url),
           options(id, label, position, vote_count:votes(count)),
-          comment_count:comments(count)
+          comment_count:comments(count),
+          like_count:likes(count)
         `,
         )
         .eq('author_id', profileData.id)
@@ -145,6 +147,7 @@ export default function UserProfilePage() {
   if (notFound) return <NotFoundPage />
 
   const isOwnProfile = user?.id === profile.id
+  const totalLikes = polls.reduce((sum, p) => sum + (p.like_count?.[0]?.count ?? 0), 0)
 
   return (
     <div className={styles.layout}>
@@ -162,6 +165,8 @@ export default function UserProfilePage() {
         </p>
 
         <div className={styles.statsRow}>
+          <span>{polls.length} Polls</span>
+          <span>{totalLikes} Likes</span>
           <span>{followerCount} Followers</span>
           <span>{followingCount} Following</span>
         </div>

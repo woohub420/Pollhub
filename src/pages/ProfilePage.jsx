@@ -15,6 +15,8 @@ export default function ProfilePage() {
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [pollCount, setPollCount] = useState(0)
+  const [totalLikes, setTotalLikes] = useState(0)
 
   useEffect(() => {
     if (searchParams.get('edit') === 'true') {
@@ -36,6 +38,13 @@ export default function ProfilePage() {
         .eq('follower_id', profile.id)
       setFollowerCount(followers ?? 0)
       setFollowingCount(following ?? 0)
+
+      const { data: pollsData } = await supabase
+        .from('polls')
+        .select('id, like_count:likes(count)')
+        .eq('author_id', profile.id)
+      setPollCount(pollsData?.length ?? 0)
+      setTotalLikes((pollsData ?? []).reduce((sum, p) => sum + (p.like_count?.[0]?.count ?? 0), 0))
     }
     loadCounts()
   }, [profile?.id])
@@ -159,6 +168,8 @@ export default function ProfilePage() {
         </p>
 
         <div className={styles.statsRow}>
+          <span>{pollCount} Polls</span>
+          <span>{totalLikes} Likes</span>
           <span>{followerCount} Followers</span>
           <span>{followingCount} Following</span>
         </div>
