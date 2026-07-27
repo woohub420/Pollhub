@@ -1,9 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { downscaleImage, getVideoDuration } from '../lib/downscaleImage.js'
 import {
-  CATEGORIES,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
   MAX_IMAGES,
@@ -17,7 +16,8 @@ import styles from './Modal.module.css'
 export default function CreatePollModal({ onClose, onCreated }) {
   const { user } = useAuth()
   const [question, setQuestion] = useState('')
-  const [category, setCategory] = useState(CATEGORIES[0])
+  const [categories, setCategories] = useState([])
+  const [category, setCategory] = useState('')
   const [options, setOptions] = useState(['', ''])
   const [mediaFiles, setMediaFiles] = useState([]) // [{ file, preview, isVideo }]
   const [mediaMode, setMediaMode] = useState(null) // null | 'image' | 'video'
@@ -25,6 +25,15 @@ export default function CreatePollModal({ onClose, onCreated }) {
   const [submitting, setSubmitting] = useState(false)
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+
+  useEffect(() => {
+    async function loadCategories() {
+      const { data } = await supabase.from('categories').select('id, name, slug').order('name')
+      setCategories(data ?? [])
+      if (data?.length) setCategory((c) => c || data[0].name)
+    }
+    loadCategories()
+  }, [])
 
   async function handleMediaChange(e) {
     const files = Array.from(e.target.files ?? [])
@@ -119,8 +128,8 @@ export default function CreatePollModal({ onClose, onCreated }) {
       setError('Question must be 200 characters or fewer.')
       return
     }
-    if (!CATEGORIES.includes(category)) {
-      setError('Invalid category.')
+    if (!category) {
+      setError('Please select a category.')
       return
     }
     if (filtered.length < 2) {
@@ -209,9 +218,10 @@ export default function CreatePollModal({ onClose, onCreated }) {
           <div className={styles.field}>
             <label className={styles.label}>Category</label>
             <select className={styles.select} value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              <option value="">Select a category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
                 </option>
               ))}
             </select>

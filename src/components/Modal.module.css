@@ -120,3 +120,56 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
 }
+
+.preview {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--text3);
+}
+
+.doneIcon {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text2);
+  font-size: 0.88rem;
+  margin: 0 0 16px;
+}
+
+.reasonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.reasonBtn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.reasonBtn:hover {
+  border-color: var(--accent);
+}
+
+.reasonSelected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+}

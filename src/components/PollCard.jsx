@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
 import CommentSection from './CommentSection.jsx'
 import PollMedia from './PollMedia.jsx'
+import ReportModal from './ReportModal.jsx'
 import styles from './PollCard.module.css'
 
 export default function PollCard({ poll, onUpdate, defaultShowComments = false }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const navigate = useNavigate()
   const [myVote, setMyVote] = useState(null)
   const [voting, setVoting] = useState(false)
   const [error, setError] = useState('')
   const [showComments, setShowComments] = useState(defaultShowComments)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -84,6 +88,12 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm('Delete this poll?')) return
+    await supabase.from('polls').delete().eq('id', poll.id)
+    onUpdate?.()
+  }
+
   function handleCopyLink() {
     const url = `${window.location.origin}/poll/${poll.id}`
     navigator.clipboard?.writeText(url)
@@ -101,9 +111,57 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
   return (
     <div className={styles.card}>
       <div className={styles.meta}>
-        <span className={styles.category}>{poll.category}</span>
+        <span
+          className={styles.category}
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/c/${poll.category}`)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          {poll.category}
+        </span>
         <AuthorLine username={poll.profiles?.username ?? 'unknown'} avatarUrl={poll.profiles?.avatar_url} />
+
+        <div className={styles.menuWrapper}>
+          <button className={styles.menuBtn} onClick={() => setMenuOpen((o) => !o)}>
+            ⋯
+          </button>
+          {menuOpen && (
+            <div className={styles.menuDropdown}>
+              {user && (
+                <div
+                  className={styles.menuItem}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setReportOpen(true)
+                  }}
+                >
+                  🚩 Report
+                </div>
+              )}
+              {(profile?.is_admin || user?.id === poll.author_id) && (
+                <div
+                  className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    handleDelete()
+                  }}
+                >
+                  🗑️ Delete Poll
+                </div>
+              )}
+              {!user && (
+                <div className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+                  Log in to report
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {reportOpen && <ReportModal pollId={poll.id} onClose={() => setReportOpen(false)} />}
 
       <Link to={`/poll/${poll.id}`} className={styles.question}>
         {poll.question}

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
+import ReportModal from './ReportModal.jsx'
 import styles from './CommentSection.module.css'
 
 export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -13,6 +14,8 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
   const [submitting, setSubmitting] = useState(false)
   const [replyingTo, setReplyingTo] = useState(null)
   const [replyText, setReplyText] = useState('')
+  const [commentMenuOpen, setCommentMenuOpen] = useState({})
+  const [reportingCommentId, setReportingCommentId] = useState(null)
 
   useEffect(() => {
     loadComments()
@@ -126,6 +129,16 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
     }
   }
 
+  async function handleDeleteComment(commentId) {
+    if (!window.confirm('Delete this comment?')) return
+    await supabase.from('comments').delete().eq('id', commentId)
+    setComments((prev) =>
+      prev
+        .filter((c) => c.id !== commentId)
+        .map((c) => ({ ...c, replies: (c.replies ?? []).filter((r) => r.id !== commentId) })),
+    )
+  }
+
   return (
     <div className={styles.section}>
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -156,10 +169,46 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
           {comments.map((comment) => (
             <li key={comment.id} className={styles.commentThread}>
               <div className={styles.comment}>
-                <AuthorLine
-                  username={comment.profiles?.username ?? 'unknown'}
-                  avatarUrl={comment.profiles?.avatar_url}
-                />
+                <div className={styles.commentTop}>
+                  <AuthorLine
+                    username={comment.profiles?.username ?? 'unknown'}
+                    avatarUrl={comment.profiles?.avatar_url}
+                  />
+                  <div className={styles.commentMenu}>
+                    <button
+                      className={styles.commentMenuBtn}
+                      onClick={() => setCommentMenuOpen((o) => ({ ...o, [comment.id]: !o[comment.id] }))}
+                    >
+                      ⋯
+                    </button>
+                    {commentMenuOpen[comment.id] && (
+                      <div className={styles.commentMenuDropdown}>
+                        {user && (
+                          <div
+                            className={styles.commentMenuItem}
+                            onClick={() => {
+                              setCommentMenuOpen({})
+                              setReportingCommentId(comment.id)
+                            }}
+                          >
+                            🚩 Report
+                          </div>
+                        )}
+                        {(profile?.is_admin || user?.id === comment.author_id) && (
+                          <div
+                            className={`${styles.commentMenuItem} ${styles.commentMenuDanger}`}
+                            onClick={() => {
+                              setCommentMenuOpen({})
+                              handleDeleteComment(comment.id)
+                            }}
+                          >
+                            🗑️ Delete
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <p className={styles.commentBody}>{comment.body}</p>
                 {user && (
                   <button
@@ -204,6 +253,10 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
             </li>
           ))}
         </ul>
+      )}
+
+      {reportingCommentId && (
+        <ReportModal commentId={reportingCommentId} onClose={() => setReportingCommentId(null)} />
       )}
     </div>
   )

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../lib/AuthContext.jsx'
 import { CATEGORIES } from '../lib/constants.js'
 import PollCard from '../components/PollCard.jsx'
+import AuthModal from '../components/AuthModal.jsx'
+import CreateCategoryModal from '../components/CreateCategoryModal.jsx'
 import styles from './Feed.module.css'
 
 const SORT_MODES = ['hot', 'new', 'top']
@@ -17,15 +20,35 @@ function hotScore(poll) {
 }
 
 export default function Feed() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [polls, setPolls] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [sort, setSort] = useState('hot')
   const [category, setCategory] = useState('all')
+  const [followedCategories, setFollowedCategories] = useState([])
+  const [authOpen, setAuthOpen] = useState(false)
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false)
 
   useEffect(() => {
     loadPolls()
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setFollowedCategories([])
+      return
+    }
+    async function loadFollowedCategories() {
+      const { data } = await supabase
+        .from('category_follows')
+        .select('categories(id, name, slug)')
+        .eq('user_id', user.id)
+      setFollowedCategories((data ?? []).map((d) => d.categories).filter(Boolean))
+    }
+    loadFollowedCategories()
+  }, [user])
 
   async function loadPolls() {
     setLoading(true)
@@ -154,7 +177,28 @@ export default function Feed() {
             </ol>
           )}
         </div>
+
+        {user && followedCategories.length > 0 && (
+          <div className={styles.sidebarCard}>
+            <h3 className={styles.sidebarTitle}>Your Communities</h3>
+            {followedCategories.map((cat) => (
+              <div key={cat.id} className={styles.communityItem} onClick={() => navigate(`/c/${cat.slug}`)}>
+                c/{cat.slug}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          className={styles.createCategoryBtn}
+          onClick={() => (user ? setCreateCategoryOpen(true) : setAuthOpen(true))}
+        >
+          + Create Community
+        </button>
       </aside>
+
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+      {createCategoryOpen && <CreateCategoryModal onClose={() => setCreateCategoryOpen(false)} />}
     </div>
   )
 }
