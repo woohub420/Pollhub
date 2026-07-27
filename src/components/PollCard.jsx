@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
 import CommentSection from './CommentSection.jsx'
-import { HeartIcon } from './icons.jsx'
+import { CheckIcon, HeartIcon, LinkIcon, ShareIcon } from './icons.jsx'
 import PollMedia from './PollMedia.jsx'
 import ReportModal from './ReportModal.jsx'
 import styles from './PollCard.module.css'
@@ -21,6 +21,19 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
   const [localOptions, setLocalOptions] = useState(poll.options ?? [])
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [shareMenuOpen, setShareMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const shareRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (shareRef.current && !shareRef.current.contains(e.target)) {
+        setShareMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -210,18 +223,53 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
     onUpdate?.()
   }
 
-  function handleCopyLink() {
+  async function handleShare() {
     const url = `${window.location.origin}/poll/${poll.id}`
-    navigator.clipboard?.writeText(url)
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: poll.question, url })
+      } catch (err) {
+        // User cancelled the share sheet — nothing to do
+      }
+      return
+    }
+
+    setShareMenuOpen((o) => !o)
   }
 
-  function handleShareTwitter() {
+  async function copyLink() {
+    const url = `${window.location.origin}/poll/${poll.id}`
+    await navigator.clipboard?.writeText(url)
+    setShareMenuOpen(false)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function shareToTwitter() {
     const url = `${window.location.origin}/poll/${poll.id}`
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(poll.question)}&url=${encodeURIComponent(url)}`,
       '_blank',
       'noopener,noreferrer',
     )
+    setShareMenuOpen(false)
+  }
+
+  function shareToFacebook() {
+    const url = `${window.location.origin}/poll/${poll.id}`
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+    setShareMenuOpen(false)
+  }
+
+  function shareToKakao() {
+    const url = `${window.location.origin}/poll/${poll.id}`
+    window.open(`https://story.kakao.com/share?url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')
+    setShareMenuOpen(false)
   }
 
   return (
@@ -340,12 +388,39 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
         <button className={styles.footerBtn} onClick={() => setShowComments((v) => !v)}>
           {commentCount} comments
         </button>
-        <button className={styles.footerBtn} onClick={handleCopyLink}>
-          Copy link
-        </button>
-        <button className={styles.footerBtn} onClick={handleShareTwitter}>
-          Share
-        </button>
+        <div className={styles.shareWrapper} ref={shareRef}>
+          <button
+            className={`${styles.footerBtn} ${styles.likeBtn} ${copied ? styles.footerBtnCopied : ''}`}
+            onClick={handleShare}
+          >
+            {copied ? (
+              <>
+                <CheckIcon size={14} /> Copied
+              </>
+            ) : (
+              <>
+                <ShareIcon size={14} /> Share
+              </>
+            )}
+          </button>
+
+          {shareMenuOpen && (
+            <div className={styles.shareDropdown}>
+              <div className={styles.menuItem} onClick={copyLink}>
+                <LinkIcon size={14} /> Copy link
+              </div>
+              <div className={styles.menuItem} onClick={shareToTwitter}>
+                Twitter / X
+              </div>
+              <div className={styles.menuItem} onClick={shareToFacebook}>
+                Facebook
+              </div>
+              <div className={styles.menuItem} onClick={shareToKakao}>
+                KakaoTalk
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {showComments && (
