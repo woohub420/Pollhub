@@ -95,7 +95,8 @@ export default function Header() {
   return (
     <header className={styles.header}>
       <Link to="/" className={styles.logo}>
-        PollHub
+        <img src="/logo.png" alt="" className={styles.logoIcon} />
+        <span className={styles.logoText}>PollHub</span>
       </Link>
 
       <div className={styles.searchWrapper} ref={searchRef}>

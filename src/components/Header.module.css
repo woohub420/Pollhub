@@ -11,6 +11,18 @@
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.logoText {
   font-family: var(--font-serif);
   font-size: 1.4rem;
   color: var(--accent2);
