@@ -40,7 +40,7 @@ export default function PollPage() {
         .from('polls')
         .select(
           `
-          id, question, category, created_at, author_id, media_url, media_type,
+          id, question, description, category, created_at, author_id, media_url, media_type,
           expires_at,
           profiles(username, avatar_url),
           options(id, label, position, vote_count:votes(count)),
@@ -85,7 +85,7 @@ export default function PollPage() {
       <Link to="/" className={styles.back}>
         &larr; Back to feed
       </Link>
-      <PollCard poll={poll} onUpdate={loadPoll} defaultShowComments />
+      <PollCard poll={poll} onUpdate={loadPoll} defaultShowComments showDescription />
     </div>
   )
 }

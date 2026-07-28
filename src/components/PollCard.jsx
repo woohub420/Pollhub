@@ -9,7 +9,7 @@ import PollMedia from './PollMedia.jsx'
 import ReportModal from './ReportModal.jsx'
 import styles from './PollCard.module.css'
 
-export default function PollCard({ poll, onUpdate, defaultShowComments = false }) {
+export default function PollCard({ poll, onUpdate, defaultShowComments = false, showDescription = false }) {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [myVote, setMyVote] = useState(null)
@@ -330,6 +330,8 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false }
       <Link to={`/poll/${poll.id}`} className={styles.question}>
         {poll.question}
       </Link>
+
+      {showDescription && poll.description && <p className={styles.description}>{poll.description}</p>}
 
       <PollMedia
         media={poll.poll_media?.slice().sort((a, b) => a.position - b.position)}

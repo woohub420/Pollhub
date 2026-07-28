@@ -16,6 +16,7 @@ import styles from './Modal.module.css'
 export default function CreatePollModal({ onClose, onCreated }) {
   const { user } = useAuth()
   const [question, setQuestion] = useState('')
+  const [description, setDescription] = useState('')
   const [categories, setCategories] = useState([])
   const [category, setCategory] = useState('')
   const [options, setOptions] = useState(['', ''])
@@ -164,6 +165,7 @@ export default function CreatePollModal({ onClose, onCreated }) {
         .from('polls')
         .insert({
           question: trimmedQuestion,
+          description: description.trim() || null,
           category,
           author_id: user.id,
           expires_at: getExpiresAt(),
@@ -227,6 +229,21 @@ export default function CreatePollModal({ onClose, onCreated }) {
               rows={2}
               required
             />
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>
+              Description <span className={styles.optional}>(optional, shown only when poll is opened)</span>
+            </label>
+            <textarea
+              className={styles.textarea}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add more context to your poll..."
+              maxLength={500}
+              rows={3}
+            />
+            <span className={styles.charCount}>{description.length}/500</span>
           </div>
 
           <div className={styles.field}>

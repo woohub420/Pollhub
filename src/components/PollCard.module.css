@@ -34,6 +34,14 @@
   color: var(--accent2);
 }
 
+.description {
+  color: var(--text2);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: -6px 0 14px;
+  white-space: pre-wrap;
+}
+
 .error {
   color: var(--red);
   font-size: 0.85rem;
