@@ -11,6 +11,54 @@
   min-width: 0;
 }
 
+.feedTabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.feedTab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.feedTab:hover {
+  color: var(--text);
+}
+
+.feedTabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.emptyFollowing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  color: var(--text2);
+  text-align: center;
+}
+
+.emptyFollowing p {
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.emptyFollowingSub {
+  font-size: 0.8rem !important;
+}
+
 .controls {
   display: flex;
   align-items: center;

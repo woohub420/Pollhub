@@ -30,10 +30,11 @@ export default function Feed() {
   const [followedCategories, setFollowedCategories] = useState([])
   const [authOpen, setAuthOpen] = useState(false)
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false)
+  const [feedMode, setFeedMode] = useState('all') // 'all' | 'following'
 
   useEffect(() => {
     loadPolls()
-  }, [])
+  }, [feedMode, user])
 
   useEffect(() => {
     if (!user) {
@@ -54,11 +55,29 @@ export default function Feed() {
     setLoading(true)
     setError('')
     try {
-      const { data: pollsData, error: pollsErr } = await supabase
+      let authorIds = null
+
+      if (feedMode === 'following' && user) {
+        const { data: followData } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id)
+
+        authorIds = (followData ?? []).map((f) => f.following_id)
+
+        if (authorIds.length === 0) {
+          setPolls([])
+          setLoading(false)
+          return
+        }
+      }
+
+      let q = supabase
         .from('polls')
         .select(
           `
           id, question, category, created_at, author_id, media_url, media_type,
+          expires_at,
           profiles(username, avatar_url),
           options(id, label, position, vote_count:votes(count)),
           comment_count:comments(count)
@@ -66,6 +85,10 @@ export default function Feed() {
         )
         .order('created_at', { ascending: false })
         .limit(100)
+
+      if (authorIds) q = q.in('author_id', authorIds)
+
+      const { data: pollsData, error: pollsErr } = await q
       if (pollsErr) throw pollsErr
 
       // PostgREST isn't recognizing the poll_media foreign key relationship
@@ -115,6 +138,21 @@ export default function Feed() {
   return (
     <div className={styles.layout}>
       <main className={styles.main}>
+        <div className={styles.feedTabs}>
+          <button
+            className={`${styles.feedTab} ${feedMode === 'all' ? styles.feedTabActive : ''}`}
+            onClick={() => setFeedMode('all')}
+          >
+            All
+          </button>
+          <button
+            className={`${styles.feedTab} ${feedMode === 'following' ? styles.feedTabActive : ''}`}
+            onClick={() => (user ? setFeedMode('following') : setAuthOpen(true))}
+          >
+            Following
+          </button>
+        </div>
+
         <div className={styles.controls}>
           <div className={styles.sortTabs}>
             {SORT_MODES.map((mode) => (
@@ -143,6 +181,11 @@ export default function Feed() {
           </div>
         ) : error ? (
           <div className={styles.error}>{error}</div>
+        ) : filtered.length === 0 && feedMode === 'following' ? (
+          <div className={styles.emptyFollowing}>
+            <p>No polls from people you follow yet.</p>
+            <p className={styles.emptyFollowingSub}>Follow some users to see their polls here!</p>
+          </div>
         ) : filtered.length === 0 ? (
           <div className={styles.empty}>No polls yet. Be the first to create one.</div>
         ) : (

@@ -23,8 +23,17 @@ export default function CreatePollModal({ onClose, onCreated }) {
   const [mediaMode, setMediaMode] = useState(null) // null | 'image' | 'video'
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [expiresIn, setExpiresIn] = useState('') // '' | '1h' | '6h' | '24h' | '3d' | '7d'
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+
+  function getExpiresAt() {
+    if (!expiresIn) return null
+    const map = { '1h': 1, '6h': 6, '24h': 24, '3d': 72, '7d': 168 }
+    const d = new Date()
+    d.setHours(d.getHours() + map[expiresIn])
+    return d.toISOString()
+  }
 
   useEffect(() => {
     async function loadCategories() {
@@ -153,7 +162,12 @@ export default function CreatePollModal({ onClose, onCreated }) {
     try {
       const { data: poll, error: pollErr } = await supabase
         .from('polls')
-        .insert({ question: trimmedQuestion, category, author_id: user.id })
+        .insert({
+          question: trimmedQuestion,
+          category,
+          author_id: user.id,
+          expires_at: getExpiresAt(),
+        })
         .select()
         .maybeSingle()
       if (pollErr) throw pollErr
@@ -250,6 +264,18 @@ export default function CreatePollModal({ onClose, onCreated }) {
                 + Add option
               </button>
             )}
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Poll closes in</label>
+            <select className={styles.select} value={expiresIn} onChange={(e) => setExpiresIn(e.target.value)}>
+              <option value="">Never</option>
+              <option value="1h">1 hour</option>
+              <option value="6h">6 hours</option>
+              <option value="24h">24 hours</option>
+              <option value="3d">3 days</option>
+              <option value="7d">7 days</option>
+            </select>
           </div>
 
           <div className={styles.field}>
