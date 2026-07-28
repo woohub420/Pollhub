@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../lib/AuthContext.jsx'
 import styles from './Modal.module.css'
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY
 
 export default function AuthModal({ onClose }) {
   const { signIn, signUp, signInWithGoogle } = useAuth()
@@ -10,6 +13,8 @@ export default function AuthModal({ onClose }) {
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileKey, setTurnstileKey] = useState(0)
 
   function validateSignup() {
     const clean = username.toLowerCase().trim()
@@ -43,8 +48,26 @@ export default function AuthModal({ onClose }) {
       }
     }
 
+    if (!turnstileToken) {
+      setError('Please complete the security check.')
+      return
+    }
+
     setSubmitting(true)
     try {
+      const verifyRes = await fetch('/api/verify-turnstile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      })
+      const verifyData = await verifyRes.json()
+      if (!verifyData.success) {
+        setError('Security check failed. Please try again.')
+        setTurnstileKey((k) => k + 1)
+        setTurnstileToken('')
+        return
+      }
+
       if (mode === 'login') {
         await signIn(email.trim(), password)
       } else {
@@ -54,6 +77,8 @@ export default function AuthModal({ onClose }) {
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
       console.error(err)
+      setTurnstileKey((k) => k + 1)
+      setTurnstileToken('')
     } finally {
       setSubmitting(false)
     }
@@ -102,11 +127,28 @@ export default function AuthModal({ onClose }) {
             />
           </div>
 
+          {TURNSTILE_SITE_KEY && (
+            <div className={styles.field}>
+              <Turnstile
+                key={turnstileKey}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken('')}
+                onError={() => setTurnstileToken('')}
+                options={{ theme: 'dark' }}
+              />
+            </div>
+          )}
+
           <div className={styles.actionsRow}>
             <button type="button" className="btn btn-ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-accent" disabled={submitting}>
+            <button
+              type="submit"
+              className="btn btn-accent"
+              disabled={submitting || (TURNSTILE_SITE_KEY && !turnstileToken)}
+            >
               {submitting ? <span className="spinner" /> : mode === 'login' ? 'Log in' : 'Sign up'}
             </button>
           </div>
