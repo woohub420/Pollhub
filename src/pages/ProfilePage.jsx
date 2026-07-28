@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
+import { CommentIcon, EyeIcon, HeartIcon, VoteIcon } from '../components/icons.jsx'
 import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -15,8 +17,10 @@ export default function ProfilePage() {
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
   const [uploading, setUploading] = useState(false)
-  const [pollCount, setPollCount] = useState(0)
+  const [polls, setPolls] = useState([])
   const [totalLikes, setTotalLikes] = useState(0)
+  const [viewMap, setViewMap] = useState({})
+  const [totalViews, setTotalViews] = useState(0)
 
   useEffect(() => {
     if (searchParams.get('edit') === 'true') {
@@ -38,16 +42,64 @@ export default function ProfilePage() {
         .eq('follower_id', profile.id)
       setFollowerCount(followers ?? 0)
       setFollowingCount(following ?? 0)
-
-      const { data: pollsData } = await supabase
-        .from('polls')
-        .select('id, like_count:likes(count)')
-        .eq('author_id', profile.id)
-      setPollCount(pollsData?.length ?? 0)
-      setTotalLikes((pollsData ?? []).reduce((sum, p) => sum + (p.like_count?.[0]?.count ?? 0), 0))
     }
     loadCounts()
   }, [profile?.id])
+
+  useEffect(() => {
+    loadPolls()
+  }, [profile?.id])
+
+  async function loadPolls() {
+    if (!profile?.id) return
+
+    const { data: pollsData } = await supabase
+      .from('polls')
+      .select(
+        `
+        id, question, category, created_at, author_id, media_url, media_type,
+        expires_at,
+        profiles(username, avatar_url),
+        options(id, label, position, vote_count:votes(count)),
+        comment_count:comments(count),
+        like_count:likes(count)
+      `,
+      )
+      .eq('author_id', profile.id)
+      .order('created_at', { ascending: false })
+
+    // PostgREST isn't recognizing the poll_media foreign key relationship
+    // for embedding, so fetch it separately and merge instead.
+    const pollIds = (pollsData ?? []).map((p) => p.id)
+    const mediaMap = {}
+    if (pollIds.length > 0) {
+      const { data: mediaData } = await supabase
+        .from('poll_media')
+        .select('id, poll_id, url, media_type, position')
+        .in('poll_id', pollIds)
+      ;(mediaData ?? []).forEach((m) => {
+        if (!mediaMap[m.poll_id]) mediaMap[m.poll_id] = []
+        mediaMap[m.poll_id].push(m)
+      })
+    }
+
+    const merged = (pollsData ?? []).map((p) => ({ ...p, poll_media: mediaMap[p.id] ?? [] }))
+    setPolls(merged)
+    setTotalLikes(merged.reduce((sum, p) => sum + (p.like_count?.[0]?.count ?? 0), 0))
+
+    if (pollIds.length > 0) {
+      const { data: viewData } = await supabase.from('poll_views').select('poll_id').in('poll_id', pollIds)
+      const map = {}
+      ;(viewData ?? []).forEach((v) => {
+        map[v.poll_id] = (map[v.poll_id] ?? 0) + 1
+      })
+      setViewMap(map)
+      setTotalViews((viewData ?? []).length)
+    } else {
+      setViewMap({})
+      setTotalViews(0)
+    }
+  }
 
   async function handleAvatarUpload(e) {
     const file = e.target.files?.[0]
@@ -168,7 +220,8 @@ export default function ProfilePage() {
         </p>
 
         <div className={styles.statsRow}>
-          <span>{pollCount} Polls</span>
+          <span>{polls.length} Polls</span>
+          <span>{totalViews.toLocaleString()} Views</span>
           <span>{totalLikes} Likes</span>
           <span>{followerCount} Followers</span>
           <span>{followingCount} Following</span>
@@ -201,6 +254,36 @@ export default function ProfilePage() {
           <button className="btn btn-ghost btn-sm" onClick={openEdit}>
             Edit Profile
           </button>
+        )}
+      </div>
+
+      <h3 className={styles.pollsHeading}>My Polls</h3>
+      <div className={styles.polls}>
+        {polls.length === 0 ? (
+          <div className={styles.empty}>No polls yet.</div>
+        ) : (
+          polls.map((poll) => {
+            const totalVotes = poll.options?.reduce((s, o) => s + (o.vote_count?.[0]?.count ?? 0), 0) ?? 0
+            return (
+              <div key={poll.id} className={styles.pollWithStats}>
+                <PollCard poll={poll} onUpdate={loadPolls} />
+                <div className={styles.pollStats}>
+                  <span>
+                    <EyeIcon size={13} /> {(viewMap[poll.id] ?? 0).toLocaleString()} views
+                  </span>
+                  <span>
+                    <HeartIcon size={13} /> {poll.like_count?.[0]?.count ?? 0} likes
+                  </span>
+                  <span>
+                    <CommentIcon size={13} /> {poll.comment_count?.[0]?.count ?? 0} comments
+                  </span>
+                  <span>
+                    <VoteIcon size={13} /> {totalVotes} votes
+                  </span>
+                </div>
+              </div>
+            )
+          })
         )}
       </div>
     </div>
