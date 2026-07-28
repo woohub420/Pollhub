@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import posthog from 'posthog-js'
 import { supabase } from '../lib/supabase.js'
 import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
@@ -37,6 +38,12 @@ export default function SearchPage() {
     if (tab === 'polls' || tab === 'categories') searchPolls()
     if (tab === 'users') searchUsers()
   }, [query, tab])
+
+  useEffect(() => {
+    if (query.trim().length < 1) return
+    posthog.capture('search_performed', { query, tab })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
 
   async function searchPolls() {
     setLoading(true)

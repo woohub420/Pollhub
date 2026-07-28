@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import posthog from 'posthog-js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import PollCard from '../components/PollCard.jsx'
@@ -31,6 +32,15 @@ export default function PollPage() {
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poll?.id, user?.id])
+
+  useEffect(() => {
+    if (!poll) return
+    posthog.capture('poll_viewed', {
+      poll_id: poll.id,
+      category: poll.category,
+      has_media: (poll.poll_media?.length > 0) || !!poll.media_url,
+    })
+  }, [poll?.id])
 
   async function loadPoll() {
     setLoading(true)

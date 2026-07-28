@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import posthog from 'posthog-js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
@@ -151,6 +152,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
       })
       if (voteErr) throw voteErr
       setMyVote(optionId)
+      posthog.capture('poll_voted', { poll_id: poll.id, category: poll.category, option_id: optionId })
 
       if (poll.author_id && poll.author_id !== user.id) {
         await supabase.from('notifications').insert({
@@ -198,6 +200,8 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
         return
       }
 
+      posthog.capture('poll_liked', { poll_id: poll.id, category: poll.category })
+
       if (poll.author_id && poll.author_id !== user.id) {
         const { data: settings } = await supabase
           .from('notification_settings')
@@ -229,6 +233,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
     if (navigator.share) {
       try {
         await navigator.share({ title: poll.question, url })
+        posthog.capture('poll_shared', { poll_id: poll.id, method: 'native' })
       } catch (err) {
         // User cancelled the share sheet — nothing to do
       }
@@ -244,6 +249,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
     setShareMenuOpen(false)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    posthog.capture('poll_shared', { poll_id: poll.id, method: 'copy_link' })
   }
 
   function shareToTwitter() {
@@ -254,6 +260,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
       'noopener,noreferrer',
     )
     setShareMenuOpen(false)
+    posthog.capture('poll_shared', { poll_id: poll.id, method: 'twitter' })
   }
 
   function shareToFacebook() {
@@ -264,12 +271,14 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
       'noopener,noreferrer',
     )
     setShareMenuOpen(false)
+    posthog.capture('poll_shared', { poll_id: poll.id, method: 'facebook' })
   }
 
   function shareToKakao() {
     const url = `${window.location.origin}/poll/${poll.id}`
     window.open(`https://story.kakao.com/share?url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer')
     setShareMenuOpen(false)
+    posthog.capture('poll_shared', { poll_id: poll.id, method: 'kakao' })
   }
 
   return (

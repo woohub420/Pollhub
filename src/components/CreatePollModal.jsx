@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import posthog from 'posthog-js'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { downscaleImage, getVideoDuration } from '../lib/downscaleImage.js'
@@ -201,6 +202,13 @@ export default function CreatePollModal({ onClose, onCreated }) {
         const { error: mediaErr } = await supabase.from('poll_media').insert(rows)
         if (mediaErr) throw mediaErr
       }
+
+      posthog.capture('poll_created', {
+        category,
+        has_media: mediaFiles.length > 0,
+        has_description: !!description.trim(),
+        has_expiry: !!expiresIn,
+      })
 
       onCreated?.(poll.id)
     } catch (err) {

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import posthog from 'posthog-js'
 import { supabase } from './supabase.js'
 
 const AuthContext = createContext(null)
@@ -15,7 +16,7 @@ export function AuthProvider({ children }) {
       const { data: { session } } = await supabase.auth.getSession()
       if (!active) return
       setUser(session?.user ?? null)
-      if (session?.user) await loadProfile(session.user.id)
+      if (session?.user) await loadProfile(session.user.id, session.user)
       setLoading(false)
     }
     init()
@@ -25,7 +26,7 @@ export function AuthProvider({ children }) {
       setUser(session?.user ?? null)
       if (session?.user) {
         if (event === 'SIGNED_IN') await ensureProfile(session.user)
-        await loadProfile(session.user.id)
+        await loadProfile(session.user.id, session.user)
       } else {
         setProfile(null)
       }
@@ -38,13 +39,21 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  async function loadProfile(userId) {
+  async function loadProfile(userId, authUser) {
     const { data } = await supabase
       .from('profiles')
       .select('id, username, avatar_url, is_admin, created_at')
       .eq('id', userId)
       .maybeSingle()
     setProfile(data ?? null)
+
+    if (data && import.meta.env.VITE_POSTHOG_KEY) {
+      posthog.identify(userId, {
+        username: data.username,
+        email: authUser?.email,
+        created_at: data.created_at,
+      })
+    }
   }
 
   async function ensureProfile(user) {
@@ -112,6 +121,7 @@ export function AuthProvider({ children }) {
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
+    if (import.meta.env.VITE_POSTHOG_KEY) posthog.reset()
   }
 
   const value = { user, profile, loading, signIn, signUp, signInWithGoogle, signOut, refreshProfile }
