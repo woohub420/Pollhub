@@ -7,7 +7,7 @@ import CreatePollModal from './CreatePollModal.jsx'
 import CreateCategoryModal from './CreateCategoryModal.jsx'
 import CompleteProfileModal from './CompleteProfileModal.jsx'
 import NotificationBell from './NotificationBell.jsx'
-import { SearchIcon, SettingsIcon, UserIcon, EditIcon, LogOutIcon } from './icons.jsx'
+import { SearchIcon, SettingsIcon, UserIcon, EditIcon, LogOutIcon, VoteIcon, TagIcon } from './icons.jsx'
 import styles from './Header.module.css'
 
 export default function Header() {
@@ -15,6 +15,7 @@ export default function Header() {
   const [showAuth, setShowAuth] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false)
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [suggestions, setSuggestions] = useState(null) // null = closed, [] = open but empty
@@ -209,16 +210,63 @@ export default function Header() {
           <SearchIcon size={19} />
         </button>
 
-        <button className="btn btn-accent btn-sm" onClick={handleNewPoll}>
-          + New Poll
+        <div className={styles.desktopActions}>
+          <button className="btn btn-accent btn-sm" onClick={handleNewPoll}>
+            + New Poll
+          </button>
+
+          <button
+            className={`btn btn-accent btn-sm ${styles.createCategoryBtn}`}
+            onClick={() => (user ? setCreateCategoryOpen(true) : setShowAuth(true))}
+          >
+            + Category
+          </button>
+        </div>
+
+        <button className={styles.mobilePlusBtn} onClick={() => setPlusMenuOpen(true)} aria-label="Create">
+          +
         </button>
 
-        <button
-          className={`btn btn-accent btn-sm ${styles.createCategoryBtn}`}
-          onClick={() => (user ? setCreateCategoryOpen(true) : setShowAuth(true))}
-        >
-          + Category
-        </button>
+        {plusMenuOpen && (
+          <div className={styles.plusOverlay} onClick={() => setPlusMenuOpen(false)}>
+            <div className={styles.plusPopup} onClick={(e) => e.stopPropagation()}>
+              <p className={styles.plusTitle}>Create</p>
+              <button
+                className={styles.plusOption}
+                onClick={() => {
+                  setPlusMenuOpen(false)
+                  handleNewPoll()
+                }}
+              >
+                <span className={styles.plusOptionIcon}>
+                  <VoteIcon size={20} />
+                </span>
+                <div className={styles.plusOptionText}>
+                  <span className={styles.plusOptionLabel}>New Poll</span>
+                  <span className={styles.plusOptionDesc}>Ask a question with options to vote on</span>
+                </div>
+              </button>
+              <button
+                className={styles.plusOption}
+                onClick={() => {
+                  setPlusMenuOpen(false)
+                  user ? setCreateCategoryOpen(true) : setShowAuth(true)
+                }}
+              >
+                <span className={styles.plusOptionIcon}>
+                  <TagIcon size={20} />
+                </span>
+                <div className={styles.plusOptionText}>
+                  <span className={styles.plusOptionLabel}>New Category</span>
+                  <span className={styles.plusOptionDesc}>Create a new category</span>
+                </div>
+              </button>
+              <button className={styles.plusCancel} onClick={() => setPlusMenuOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <span className="spinner" />

@@ -34,6 +34,132 @@
   color: var(--accent2);
 }
 
+.desktopActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .desktopActions {
+    display: none;
+  }
+}
+
+.mobilePlusBtn {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 1.6rem;
+  font-weight: 300;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .mobilePlusBtn {
+    display: flex;
+  }
+}
+
+.plusOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.plusPopup {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 320px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.plusTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 16px 8px;
+  margin: 0;
+}
+
+.plusOption {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+.plusOption:hover {
+  background: var(--bg3);
+}
+
+.plusOptionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent2);
+  flex-shrink: 0;
+}
+
+.plusOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plusOptionLabel {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.plusOptionDesc {
+  font-size: 0.78rem;
+  color: var(--text2);
+}
+
+.plusCancel {
+  padding: 14px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.plusCancel:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
 .actions {
   display: flex;
   align-items: center;
