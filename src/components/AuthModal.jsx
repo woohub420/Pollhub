@@ -75,7 +75,12 @@ export default function AuthModal({ onClose }) {
       }
       onClose()
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      const msg = err.message?.toLowerCase() ?? ''
+      if (mode === 'login' && (msg.includes('invalid') || msg.includes('credentials'))) {
+        setError('Email or password is incorrect.')
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.')
+      }
       console.error(err)
       setTurnstileKey((k) => k + 1)
       setTurnstileToken('')
