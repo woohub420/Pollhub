@@ -46,18 +46,6 @@
   grid-template-columns: 1fr 1fr;
 }
 
-.grid3 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.grid3 .gridImg:first-child {
-  grid-column: 1 / -1;
-}
-
-.grid4 {
-  grid-template-columns: 1fr 1fr;
-}
-
 .gridImg {
   display: block;
   width: 100%;
@@ -65,4 +53,94 @@
   max-height: 480px;
   object-fit: cover;
   background: var(--bg3);
+}
+
+.grid2 .gridImg {
+  height: 220px;
+}
+
+/* Carousel — 3-4 images */
+.carousel {
+  position: relative;
+  width: 100%;
+  margin-bottom: 14px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg3);
+  user-select: none;
+}
+
+.carouselImg {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+}
+
+.carouselBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.15s;
+  line-height: 1;
+}
+
+.carouselBtn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.carouselPrev {
+  left: 10px;
+}
+
+.carouselNext {
+  right: 10px;
+}
+
+.dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.dotActive {
+  background: #fff;
+}
+
+.counter {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
 }
