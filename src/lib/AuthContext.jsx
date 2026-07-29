@@ -42,10 +42,14 @@ export function AuthProvider({ children }) {
   async function loadProfile(userId, authUser) {
     const { data } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, is_admin, created_at')
+      .select('id, username, avatar_url, is_admin, created_at, theme')
       .eq('id', userId)
       .maybeSingle()
     setProfile(data ?? null)
+
+    if (data?.theme) {
+      document.documentElement.setAttribute('data-theme', data.theme)
+    }
 
     if (data && import.meta.env.VITE_POSTHOG_KEY) {
       posthog.identify(userId, {
@@ -121,6 +125,7 @@ export function AuthProvider({ children }) {
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
+    document.documentElement.removeAttribute('data-theme')
     if (import.meta.env.VITE_POSTHOG_KEY) posthog.reset()
   }
 

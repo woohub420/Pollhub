@@ -24,6 +24,20 @@
   --font-serif: 'DM Serif Display', serif;
 }
 
+:root[data-theme='light'] {
+  --bg: #f4f4f6;
+  --bg2: #ffffff;
+  --bg3: #f0f0f2;
+  --bg4: #e8e8ec;
+
+  --text: #0d0d0f;
+  --text2: #5a5a6a;
+  --text3: #9898a6;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border2: rgba(0, 0, 0, 0.15);
+}
+
 * {
   box-sizing: border-box;
 }

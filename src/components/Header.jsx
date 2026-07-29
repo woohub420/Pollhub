@@ -6,7 +6,7 @@ import AuthModal from './AuthModal.jsx'
 import CreatePollModal from './CreatePollModal.jsx'
 import CompleteProfileModal from './CompleteProfileModal.jsx'
 import NotificationBell from './NotificationBell.jsx'
-import { SearchIcon, BellIcon, UserIcon, EditIcon, LogOutIcon } from './icons.jsx'
+import { SearchIcon, SettingsIcon, UserIcon, EditIcon, LogOutIcon } from './icons.jsx'
 import styles from './Header.module.css'
 
 export default function Header() {
@@ -272,10 +272,10 @@ export default function Header() {
                   className={styles.dropdownItem}
                   onClick={() => {
                     setDropdownOpen(false)
-                    navigate('/settings/notifications')
+                    navigate('/settings')
                   }}
                 >
-                  <BellIcon size={15} /> Notification Settings
+                  <SettingsIcon size={15} /> Settings
                 </div>
                 <div className={styles.dropdownDivider} />
                 <div className={`${styles.dropdownItem} ${styles.danger}`} onClick={handleLogOut}>
