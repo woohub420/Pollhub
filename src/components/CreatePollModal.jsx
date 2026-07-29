@@ -3,6 +3,7 @@ import posthog from 'posthog-js'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { downscaleImage, getVideoDuration } from '../lib/downscaleImage.js'
+import { TagIcon } from './icons.jsx'
 import {
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
@@ -18,8 +19,11 @@ export default function CreatePollModal({ onClose, onCreated }) {
   const { user } = useAuth()
   const [question, setQuestion] = useState('')
   const [description, setDescription] = useState('')
-  const [categories, setCategories] = useState([])
-  const [category, setCategory] = useState('')
+  const [categoryInput, setCategoryInput] = useState('')
+  const [categorySelected, setCategorySelected] = useState(null) // { id, name, slug }
+  const [categorySuggestions, setCategorySuggestions] = useState([])
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const categoryRef = useRef(null)
   const [options, setOptions] = useState(['', ''])
   const [mediaFiles, setMediaFiles] = useState([]) // [{ file, preview, isVideo }]
   const [mediaMode, setMediaMode] = useState(null) // null | 'image' | 'video'
@@ -38,13 +42,50 @@ export default function CreatePollModal({ onClose, onCreated }) {
   }
 
   useEffect(() => {
-    async function loadCategories() {
-      const { data } = await supabase.from('categories').select('id, name, slug').order('name')
-      setCategories(data ?? [])
-      if (data?.length) setCategory((c) => c || data[0].name)
+    function handleClickOutside(e) {
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+        setCategoryOpen(false)
+      }
     }
-    loadCategories()
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (categoryInput.trim().length < 1) {
+      loadAllCategories()
+      return
+    }
+    const timer = setTimeout(() => searchCategories(categoryInput.trim()), 200)
+    return () => clearTimeout(timer)
+  }, [categoryInput])
+
+  async function loadAllCategories() {
+    const { data } = await supabase.from('categories').select('id, name, slug').order('name').limit(10)
+    setCategorySuggestions(data ?? [])
+  }
+
+  async function searchCategories(q) {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name, slug')
+      .ilike('name', `%${q}%`)
+      .order('name')
+      .limit(8)
+    setCategorySuggestions(data ?? [])
+  }
+
+  function handleCategorySelect(cat) {
+    setCategorySelected(cat)
+    setCategoryInput(cat.name)
+    setCategoryOpen(false)
+  }
+
+  function handleCategoryInputChange(e) {
+    setCategoryInput(e.target.value)
+    setCategorySelected(null)
+    setCategoryOpen(true)
+  }
 
   async function handleMediaChange(e) {
     const files = Array.from(e.target.files ?? [])
@@ -139,7 +180,7 @@ export default function CreatePollModal({ onClose, onCreated }) {
       setError('Question must be 200 characters or fewer.')
       return
     }
-    if (!category) {
+    if (!categorySelected) {
       setError('Please select a category.')
       return
     }
@@ -167,7 +208,7 @@ export default function CreatePollModal({ onClose, onCreated }) {
         .insert({
           question: trimmedQuestion,
           description: description.trim() || null,
-          category,
+          category: categorySelected.name,
           author_id: user.id,
           expires_at: getExpiresAt(),
         })
@@ -204,7 +245,7 @@ export default function CreatePollModal({ onClose, onCreated }) {
       }
 
       posthog.capture('poll_created', {
-        category,
+        category: categorySelected.name,
         has_media: mediaFiles.length > 0,
         has_description: !!description.trim(),
         has_expiry: !!expiresIn,
@@ -256,14 +297,54 @@ export default function CreatePollModal({ onClose, onCreated }) {
 
           <div className={styles.field}>
             <label className={styles.label}>Category</label>
-            <select className={styles.select} value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="">Select a category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className={styles.categoryWrapper} ref={categoryRef}>
+              <div className={`${styles.categoryInput} ${categorySelected ? styles.categorySelected : ''}`}>
+                {categorySelected && <span className={styles.categoryBadge}>c/{categorySelected.slug}</span>}
+                <input
+                  className={styles.categorySearchInput}
+                  value={categoryInput}
+                  onChange={handleCategoryInputChange}
+                  onFocus={() => {
+                    setCategoryOpen(true)
+                    loadAllCategories()
+                  }}
+                  placeholder="Select a category..."
+                  autoComplete="off"
+                />
+                {categorySelected && (
+                  <button
+                    type="button"
+                    className={styles.categoryClear}
+                    onClick={() => {
+                      setCategorySelected(null)
+                      setCategoryInput('')
+                      setCategoryOpen(true)
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {categoryOpen && categorySuggestions.length > 0 && (
+                <div className={styles.categorySuggestions}>
+                  {categorySuggestions.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className={`${styles.categorySuggItem} ${
+                        categorySelected?.id === cat.id ? styles.categorySuggActive : ''
+                      }`}
+                      onClick={() => handleCategorySelect(cat)}
+                    >
+                      <TagIcon size={13} className={styles.categorySuggIcon} />
+                      <div className={styles.categorySuggText}>
+                        <span className={styles.categorySuggName}>c/{cat.slug}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className={styles.field}>
