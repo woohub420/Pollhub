@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
 import CommentSection from './CommentSection.jsx'
 import { CheckIcon, HeartIcon, LinkIcon, ShareIcon } from './icons.jsx'
+import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import PollMedia from './PollMedia.jsx'
 import ReportModal from './ReportModal.jsx'
 import styles from './PollCard.module.css'
@@ -143,6 +144,13 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
     }
     if (myVote) return
 
+    try {
+      checkRateLimit('VOTE', LIMITS.VOTE.max, LIMITS.VOTE.window)
+    } catch (err) {
+      setError(err.message)
+      return
+    }
+
     setVoting(true)
     try {
       const { error: voteErr } = await supabase.from('votes').insert({
@@ -173,6 +181,13 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
   async function handleLike() {
     if (!user) {
       setError('Log in to like.')
+      return
+    }
+
+    try {
+      checkRateLimit('LIKE', LIMITS.LIKE.max, LIMITS.LIKE.window)
+    } catch (err) {
+      setError(err.message)
       return
     }
 

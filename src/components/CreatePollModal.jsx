@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { downscaleImage, getVideoDuration } from '../lib/downscaleImage.js'
 import { TagIcon } from './icons.jsx'
+import { sanitize } from '../lib/sanitize.js'
+import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import {
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
@@ -169,14 +171,15 @@ export default function CreatePollModal({ onClose, onCreated }) {
     e.preventDefault()
     setError('')
 
-    const trimmedQuestion = question.trim()
-    const filtered = options.map((o) => o.trim()).filter(Boolean)
+    const cleanQuestion = sanitize(question)
+    const cleanDescription = sanitize(description)
+    const filtered = options.map((o) => sanitize(o)).filter(Boolean)
 
-    if (!trimmedQuestion) {
+    if (!cleanQuestion) {
       setError('Question is required.')
       return
     }
-    if (trimmedQuestion.length > 200) {
+    if (cleanQuestion.length > 200) {
       setError('Question must be 200 characters or fewer.')
       return
     }
@@ -201,13 +204,20 @@ export default function CreatePollModal({ onClose, onCreated }) {
       return
     }
 
+    try {
+      checkRateLimit('CREATE_POLL', LIMITS.CREATE_POLL.max, LIMITS.CREATE_POLL.window)
+    } catch (err) {
+      setError(err.message)
+      return
+    }
+
     setSubmitting(true)
     try {
       const { data: poll, error: pollErr } = await supabase
         .from('polls')
         .insert({
-          question: trimmedQuestion,
-          description: description.trim() || null,
+          question: cleanQuestion,
+          description: cleanDescription || null,
           category: categorySelected.name,
           author_id: user.id,
           expires_at: getExpiresAt(),
@@ -247,7 +257,7 @@ export default function CreatePollModal({ onClose, onCreated }) {
       posthog.capture('poll_created', {
         category: categorySelected.name,
         has_media: mediaFiles.length > 0,
-        has_description: !!description.trim(),
+        has_description: !!cleanDescription,
         has_expiry: !!expiresIn,
       })
 

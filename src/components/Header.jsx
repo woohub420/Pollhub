@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import AuthModal from './AuthModal.jsx'
 import CreatePollModal from './CreatePollModal.jsx'
 import CreateCategoryModal from './CreateCategoryModal.jsx'
@@ -47,6 +48,13 @@ export default function Header() {
   }, [searchInput])
 
   async function fetchSuggestions(q) {
+    try {
+      checkRateLimit('SEARCH', LIMITS.SEARCH.max, LIMITS.SEARCH.window)
+    } catch (err) {
+      console.warn(err.message)
+      return
+    }
+
     setSuggestLoading(true)
     try {
       const [pollsRes, usersRes, catsRes] = await Promise.all([

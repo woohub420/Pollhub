@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import posthog from 'posthog-js'
 import { supabase } from '../lib/supabase.js'
+import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
 import { SearchIcon } from '../components/icons.jsx'
@@ -46,6 +47,13 @@ export default function SearchPage() {
   }, [query])
 
   async function searchPolls() {
+    try {
+      checkRateLimit('SEARCH', LIMITS.SEARCH.max, LIMITS.SEARCH.window)
+    } catch (err) {
+      console.warn(err.message)
+      return
+    }
+
     setLoading(true)
     try {
       let q = supabase
@@ -95,6 +103,13 @@ export default function SearchPage() {
   }
 
   async function searchUsers() {
+    try {
+      checkRateLimit('SEARCH', LIMITS.SEARCH.max, LIMITS.SEARCH.window)
+    } catch (err) {
+      console.warn(err.message)
+      return
+    }
+
     setLoading(true)
     try {
       const { data, error } = await supabase

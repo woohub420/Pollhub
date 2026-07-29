@@ -1,7 +1,21 @@
+// In-memory per-instance rate limit — resets on cold start and isn't shared
+// across instances, so this is a soft speed bump, not a hard guarantee.
+const ipRequests = {}
+const IP_LIMIT = 10
+const IP_WINDOW_MS = 60_000
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
   }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? 'unknown'
+  const now = Date.now()
+  const recent = (ipRequests[ip] ?? []).filter((t) => now - t < IP_WINDOW_MS)
+  if (recent.length >= IP_LIMIT) {
+    return res.status(429).json({ success: false, error: 'Too many requests' })
+  }
+  ipRequests[ip] = [...recent, now]
 
   const { token } = req.body ?? {}
   if (!token) {

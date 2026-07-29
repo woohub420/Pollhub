@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
 import NotFoundPage from './NotFoundPage.jsx'
@@ -108,6 +109,14 @@ export default function UserProfilePage() {
       setError('Log in to follow users.')
       return
     }
+
+    try {
+      checkRateLimit('FOLLOW', LIMITS.FOLLOW.max, LIMITS.FOLLOW.window)
+    } catch (err) {
+      setError(err.message)
+      return
+    }
+
     try {
       if (isFollowing) {
         const { error: delErr } = await supabase

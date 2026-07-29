@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
+import { sanitize } from '../lib/sanitize.js'
+import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import AuthorLine from './AuthorLine.jsx'
 import ReportModal from './ReportModal.jsx'
 import styles from './CommentSection.module.css'
@@ -61,7 +63,7 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
     e.preventDefault()
     setError('')
 
-    const trimmed = body.trim()
+    const trimmed = sanitize(body)
     if (!trimmed) {
       setError('Comment cannot be empty.')
       return
@@ -72,6 +74,13 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
     }
     if (!user) {
       setError('Log in to comment.')
+      return
+    }
+
+    try {
+      checkRateLimit('CREATE_COMMENT', LIMITS.CREATE_COMMENT.max, LIMITS.CREATE_COMMENT.window)
+    } catch (err) {
+      setError(err.message)
       return
     }
 
@@ -98,7 +107,7 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
   }
 
   async function handleReply(parentComment) {
-    const trimmed = replyText.trim()
+    const trimmed = sanitize(replyText)
     if (!trimmed || !user) return
     if (trimmed.length > 500) {
       setError('Comment must be 500 characters or fewer.')
@@ -106,6 +115,13 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
     }
 
     setError('')
+    try {
+      checkRateLimit('CREATE_REPLY', LIMITS.CREATE_REPLY.max, LIMITS.CREATE_REPLY.window)
+    } catch (err) {
+      setError(err.message)
+      return
+    }
+
     try {
       const { data, error: insertErr } = await supabase
         .from('comments')
