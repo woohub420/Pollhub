@@ -339,12 +339,12 @@
   background: var(--bg3);
 }
 
-.createCommunityBtn {
+.createCategoryBtn {
   display: none;
 }
 
 @media (max-width: 600px) {
-  .createCommunityBtn {
+  .createCategoryBtn {
     display: flex;
   }
 }

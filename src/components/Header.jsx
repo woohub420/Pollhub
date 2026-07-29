@@ -108,7 +108,7 @@ export default function Header() {
             className={styles.headerSearchInput}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search polls, users, communities..."
+            placeholder="Search polls, users, categories..."
             onFocus={() => searchInput.trim().length > 0 && fetchSuggestions(searchInput.trim())}
           />
           {searchInput && (
@@ -137,7 +137,7 @@ export default function Header() {
               <>
                 {suggestions.categories.length > 0 && (
                   <div className={styles.suggestGroup}>
-                    <div className={styles.suggestGroupLabel}>Communities</div>
+                    <div className={styles.suggestGroupLabel}>Categories</div>
                     {suggestions.categories.map((cat) => (
                       <div
                         key={cat.id}
@@ -214,10 +214,10 @@ export default function Header() {
         </button>
 
         <button
-          className={`btn btn-accent btn-sm ${styles.createCommunityBtn}`}
+          className={`btn btn-accent btn-sm ${styles.createCategoryBtn}`}
           onClick={() => (user ? setCreateCategoryOpen(true) : setShowAuth(true))}
         >
-          + Community
+          + Category
         </button>
 
         {loading ? (

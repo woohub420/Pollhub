@@ -223,9 +223,9 @@ export default function Feed() {
 
         {user && followedCategories.length > 0 && (
           <div className={styles.sidebarCard}>
-            <h3 className={styles.sidebarTitle}>Your Communities</h3>
+            <h3 className={styles.sidebarTitle}>Your Categories</h3>
             {followedCategories.map((cat) => (
-              <div key={cat.id} className={styles.communityItem} onClick={() => navigate(`/c/${cat.slug}`)}>
+              <div key={cat.id} className={styles.categoryItem} onClick={() => navigate(`/c/${cat.slug}`)}>
                 c/{cat.slug}
               </div>
             ))}
@@ -236,7 +236,7 @@ export default function Feed() {
           className={`btn btn-accent ${styles.createCategoryBtn}`}
           onClick={() => (user ? setCreateCategoryOpen(true) : setAuthOpen(true))}
         >
-          + Create Community
+          + Create Category
         </button>
       </aside>
 
