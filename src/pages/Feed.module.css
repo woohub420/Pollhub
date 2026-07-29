@@ -174,20 +174,7 @@
 
 .createCategoryBtn {
   width: 100%;
-  background: none;
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  color: var(--text2);
-  padding: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.createCategoryBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  margin-top: 8px;
 }
 
 @media (max-width: 768px) {

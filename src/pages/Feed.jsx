@@ -233,7 +233,7 @@ export default function Feed() {
         )}
 
         <button
-          className={styles.createCategoryBtn}
+          className={`btn btn-accent ${styles.createCategoryBtn}`}
           onClick={() => (user ? setCreateCategoryOpen(true) : setAuthOpen(true))}
         >
           + Create Community
