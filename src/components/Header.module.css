@@ -16,6 +16,12 @@
   gap: 8px;
 }
 
+@media (max-width: 600px) {
+  .logoText {
+    display: none;
+  }
+}
+
 .logoIcon {
   width: 32px;
   height: 32px;
@@ -331,6 +337,16 @@
 
 .mobileSearchBtn:hover {
   background: var(--bg3);
+}
+
+.createCommunityBtn {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .createCommunityBtn {
+    display: flex;
+  }
 }
 
 @media (max-width: 600px) {

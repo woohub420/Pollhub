@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthModal from './AuthModal.jsx'
 import CreatePollModal from './CreatePollModal.jsx'
+import CreateCategoryModal from './CreateCategoryModal.jsx'
 import CompleteProfileModal from './CompleteProfileModal.jsx'
 import NotificationBell from './NotificationBell.jsx'
 import { SearchIcon, SettingsIcon, UserIcon, EditIcon, LogOutIcon } from './icons.jsx'
@@ -13,6 +14,7 @@ export default function Header() {
   const { user, profile, loading, signOut } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [suggestions, setSuggestions] = useState(null) // null = closed, [] = open but empty
@@ -211,6 +213,13 @@ export default function Header() {
           + New Poll
         </button>
 
+        <button
+          className={`btn btn-accent btn-sm ${styles.createCommunityBtn}`}
+          onClick={() => (user ? setCreateCategoryOpen(true) : setShowAuth(true))}
+        >
+          + Community
+        </button>
+
         {loading ? (
           <span className="spinner" />
         ) : user ? (
@@ -303,6 +312,7 @@ export default function Header() {
           }}
         />
       )}
+      {createCategoryOpen && <CreateCategoryModal onClose={() => setCreateCategoryOpen(false)} />}
     </header>
   )
 }
