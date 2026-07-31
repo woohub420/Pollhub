@@ -42,6 +42,8 @@ export default function NotificationBell() {
   }, [])
 
   async function fetchNotifications() {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
     const { data } = await supabase
       .from('notifications')
       .select(
@@ -51,6 +53,7 @@ export default function NotificationBell() {
       `,
       )
       .eq('user_id', user.id)
+      .gte('created_at', sevenDaysAgo)
       .order('created_at', { ascending: false })
       .limit(20)
 
