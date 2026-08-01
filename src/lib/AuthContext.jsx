@@ -42,9 +42,18 @@ export function AuthProvider({ children }) {
   async function loadProfile(userId, authUser) {
     const { data } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, is_admin, created_at, theme')
+      .select('id, username, avatar_url, is_admin, is_banned, ban_reason, created_at, theme')
       .eq('id', userId)
       .maybeSingle()
+
+    // Catches a session that was already open when the ban happened — the
+    // signIn() check below only blocks the login moment itself.
+    if (data?.is_banned) {
+      setProfile(null)
+      await supabase.auth.signOut()
+      return
+    }
+
     setProfile(data ?? null)
 
     if (data?.theme) {
@@ -101,6 +110,18 @@ export function AuthProvider({ children }) {
   async function signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('is_banned, ban_reason')
+      .eq('id', data.user.id)
+      .maybeSingle()
+
+    if (profileData?.is_banned) {
+      await supabase.auth.signOut()
+      throw new Error(`Your account has been banned. Reason: ${profileData.ban_reason ?? 'Violation of community guidelines'}`)
+    }
+
     return data
   }
 

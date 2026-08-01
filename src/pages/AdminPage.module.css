@@ -137,6 +137,38 @@
   background: rgba(248, 113, 113, 0.3);
 }
 
+.btnBan {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnBan:hover {
+  background: rgba(251, 191, 36, 0.3);
+}
+
+.btnUnban {
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnUnban:hover {
+  background: rgba(62, 207, 142, 0.3);
+}
+
 .btnDismiss {
   background: none;
   border: 1px solid var(--border2);

@@ -30,14 +30,26 @@ export default function AdminPage() {
 
   async function loadReports() {
     setLoading(true)
+
+    if (tab === 'banned') {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, is_banned, ban_reason, created_at')
+        .eq('is_banned', true)
+        .order('created_at', { ascending: false })
+      setReports(data ?? [])
+      setLoading(false)
+      return
+    }
+
     const { data } = await supabase
       .from('reports')
       .select(
         `
         id, reason, note, status, created_at,
         reporter:profiles!reports_reporter_id_fkey(username),
-        poll:polls(id, question),
-        comment:comments(id, body)
+        poll:polls(id, question, author_id, author:profiles!polls_author_id_fkey(id, username, is_banned)),
+        comment:comments(id, body, author_id, author:profiles!comments_author_id_fkey(id, username, is_banned))
       `,
       )
       .eq('status', tab)
@@ -65,13 +77,29 @@ export default function AdminPage() {
     loadReports()
   }
 
+  async function handleBan(userId, username, reportId) {
+    const reason = window.prompt(`Ban reason for ${username ?? 'this user'}:`)
+    if (!reason) return
+
+    await supabase.from('profiles').update({ is_banned: true, ban_reason: reason }).eq('id', userId)
+    if (reportId) {
+      await supabase.from('reports').update({ status: 'resolved' }).eq('id', reportId)
+    }
+    loadReports()
+  }
+
+  async function handleUnban(userId) {
+    await supabase.from('profiles').update({ is_banned: false, ban_reason: null }).eq('id', userId)
+    loadReports()
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
         <h1 className={styles.title}>🛡️ Admin Dashboard</h1>
 
         <div className={styles.tabs}>
-          {['pending', 'resolved', 'dismissed'].map((t) => (
+          {['pending', 'resolved', 'dismissed', 'banned'].map((t) => (
             <button
               key={t}
               className={`${styles.tab} ${tab === t ? styles.activeTab : ''}`}
@@ -88,9 +116,29 @@ export default function AdminPage() {
           </div>
         )}
 
-        {!loading && reports.length === 0 && <div className={styles.empty}>No {tab} reports 🎉</div>}
+        {!loading && reports.length === 0 && (
+          <div className={styles.empty}>{tab === 'banned' ? 'No banned users' : `No ${tab} reports`} 🎉</div>
+        )}
 
         {!loading &&
+          tab === 'banned' &&
+          reports.map((bannedUser) => (
+            <div key={bannedUser.id} className={styles.reportCard}>
+              <div className={styles.reportHeader}>
+                <span className={styles.reasonBadge}>🚫 Banned</span>
+                <span className={styles.reportMeta}>{bannedUser.username}</span>
+              </div>
+              {bannedUser.ban_reason && <div className={styles.reportNote}>Reason: {bannedUser.ban_reason}</div>}
+              <div className={styles.reportActions}>
+                <button className={styles.btnUnban} onClick={() => handleUnban(bannedUser.id)}>
+                  ✅ Unban
+                </button>
+              </div>
+            </div>
+          ))}
+
+        {!loading &&
+          tab !== 'banned' &&
           reports.map((report) => (
             <div key={report.id} className={styles.reportCard}>
               <div className={styles.reportHeader}>
@@ -119,17 +167,50 @@ export default function AdminPage() {
               {tab === 'pending' && (
                 <div className={styles.reportActions}>
                   {report.poll && (
-                    <button className={styles.btnDanger} onClick={() => handleDeletePoll(report.poll.id, report.id)}>
-                      🗑️ Delete Poll
-                    </button>
+                    <>
+                      <button
+                        className={styles.btnDanger}
+                        onClick={() => handleDeletePoll(report.poll.id, report.id)}
+                      >
+                        🗑️ Delete Poll
+                      </button>
+                      {!report.poll.author?.is_banned ? (
+                        <button
+                          className={styles.btnBan}
+                          onClick={() => handleBan(report.poll.author_id, report.poll.author?.username, report.id)}
+                        >
+                          🚫 Ban User
+                        </button>
+                      ) : (
+                        <button className={styles.btnUnban} onClick={() => handleUnban(report.poll.author_id)}>
+                          ✅ Unban User
+                        </button>
+                      )}
+                    </>
                   )}
                   {report.comment && (
-                    <button
-                      className={styles.btnDanger}
-                      onClick={() => handleDeleteComment(report.comment.id, report.id)}
-                    >
-                      🗑️ Delete Comment
-                    </button>
+                    <>
+                      <button
+                        className={styles.btnDanger}
+                        onClick={() => handleDeleteComment(report.comment.id, report.id)}
+                      >
+                        🗑️ Delete Comment
+                      </button>
+                      {!report.comment.author?.is_banned ? (
+                        <button
+                          className={styles.btnBan}
+                          onClick={() =>
+                            handleBan(report.comment.author_id, report.comment.author?.username, report.id)
+                          }
+                        >
+                          🚫 Ban User
+                        </button>
+                      ) : (
+                        <button className={styles.btnUnban} onClick={() => handleUnban(report.comment.author_id)}>
+                          ✅ Unban User
+                        </button>
+                      )}
+                    </>
                   )}
                   <button className={styles.btnDismiss} onClick={() => handleDismiss(report.id)}>
                     Dismiss
