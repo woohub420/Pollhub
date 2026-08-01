@@ -12,6 +12,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.bell:hover {
+  background: var(--bg3);
 }
 
 .badge {
