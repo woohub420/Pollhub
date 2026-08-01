@@ -87,6 +87,13 @@
   border-radius: var(--radius-sm);
 }
 
+.replyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .replyBtn {
   background: none;
   border: none;

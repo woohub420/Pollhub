@@ -241,10 +241,46 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
 
               {comment.replies?.map((reply) => (
                 <div key={reply.id} className={styles.reply}>
-                  <AuthorLine
-                    username={reply.profiles?.username ?? 'unknown'}
-                    avatarUrl={reply.profiles?.avatar_url}
-                  />
+                  <div className={styles.replyHeader}>
+                    <AuthorLine
+                      username={reply.profiles?.username ?? 'unknown'}
+                      avatarUrl={reply.profiles?.avatar_url}
+                    />
+                    <div className={styles.commentMenu}>
+                      <button
+                        className={styles.commentMenuBtn}
+                        onClick={() => setCommentMenuOpen((o) => ({ ...o, [reply.id]: !o[reply.id] }))}
+                      >
+                        ⋯
+                      </button>
+                      {commentMenuOpen[reply.id] && (
+                        <div className={styles.commentMenuDropdown}>
+                          {user && (
+                            <div
+                              className={styles.commentMenuItem}
+                              onClick={() => {
+                                setCommentMenuOpen({})
+                                setReportingCommentId(reply.id)
+                              }}
+                            >
+                              🚩 Report
+                            </div>
+                          )}
+                          {(profile?.is_admin || user?.id === reply.author_id) && (
+                            <div
+                              className={`${styles.commentMenuItem} ${styles.commentMenuDanger}`}
+                              onClick={() => {
+                                setCommentMenuOpen({})
+                                handleDeleteComment(reply.id)
+                              }}
+                            >
+                              🗑️ Delete
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <p className={styles.commentBody}>{reply.body}</p>
                 </div>
               ))}
