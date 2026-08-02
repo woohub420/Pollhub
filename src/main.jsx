@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import posthog from 'posthog-js'
 import App from './App.jsx'
 import Header from './components/Header.jsx'
+import Footer from './components/Footer.jsx'
 import { AuthProvider } from './lib/AuthContext.jsx'
 import './index.css'
 
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <Header />
         <App />
+        <Footer />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

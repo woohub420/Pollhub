@@ -8,6 +8,8 @@ import SearchPage from './pages/SearchPage.jsx'
 import CategoryPage from './pages/CategoryPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
+import TermsPage from './pages/TermsPage.jsx'
+import PrivacyPage from './pages/PrivacyPage.jsx'
 
 export default function App() {
   return (
@@ -21,6 +23,8 @@ export default function App() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/c/:slug" element={<CategoryPage />} />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
