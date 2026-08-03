@@ -7,6 +7,12 @@ export default function Footer() {
       <div className={styles.links}>
         <Link to="/terms" className={styles.link}>Terms of Service</Link>
         <Link to="/privacy" className={styles.link}>Privacy Policy</Link>
+        <a
+          href="mailto:ypmedia.contact@gmail.com?subject=Bug Report&body=Describe the bug here..."
+          className={styles.link}
+        >
+          🐛 Report a Bug
+        </a>
         <span className={styles.copyright}>© 2026 PollHub</span>
       </div>
     </footer>
