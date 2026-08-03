@@ -1,40 +1,160 @@
 # PollHub
 
-Read [POLLHUB_CODEX_GUIDE.md](POLLHUB_CODEX_GUIDE.md) fully before writing any code — it is the single source of truth for architecture, patterns, validation rules, and forbidden patterns (no `.single()`, no TypeScript, no new UI libraries, etc.).
+Read `POLLHUB_CODEX_GUIDE.md` fully before writing any code — it is the single source of truth for architecture, patterns, validation rules, and forbidden patterns.
 
-See [PLAN.md](PLAN.md) for the original build plan and rationale.
+Always start every prompt with:
+```
+Read POLLHUB_CODEX_GUIDE.md fully before writing any code.
+Follow all rules in that document.
+Do not install new libraries. Do not use TypeScript.
+Do not use .single() — use .maybeSingle().
+Do not embed poll_media in PostgREST select — use two-step fetch.
+For polls table, use author_id not user_id.
+Run sanitize() on all user text before DB insert.
+Call checkRateLimit() before all mutations.
+```
 
-## Current status
+---
 
-- MVP is built and deployed: https://pollhub-z837.vercel.app/
-- Auth, poll creation/voting, comments, feed sort/filter, and sidebar stats are all working against a real Supabase project.
-- Google sign-in is implemented (`AuthContext.signInWithGoogle`); new Google users are prompted for a required username via `CompleteProfileModal` since Google doesn't supply one and `profiles.username` allows NULL until set (see `supabase/enable_google_auth.sql`).
-- Polls support an optional single image/video attachment, uploaded to the `poll-media` Supabase Storage bucket (see `supabase/enable_poll_media.sql`). Videos autoplay muted when scrolled into view and pause when scrolled out, via the `useAutoplayOnVisible` IntersectionObserver hook (`src/lib/useAutoplayOnVisible.js`) — mirrors the Reddit/Instagram/Facebook feed pattern.
-- Supabase schema lives in `supabase/schema.sql`; `supabase/fix_trigger.sql` documents a fix applied to the new-user trigger (it must run as `security definer set search_path = public` with explicit grants to `supabase_auth_admin`, or signup fails with a generic "Database error saving new user").
-- Deploys automatically on every push to `main` on GitHub (`woohub420/Pollhub`).
-- The user is new to programming — explain *why*, not just *what*, and prefer walking through changes over silently applying them.
+## Current Status
 
-## Known gaps / not yet done
+- **Production URL:** https://pollhub-mu.vercel.app/
+- **GitHub:** woohub420/Pollhub (auto-deploys on push to main)
+- **Supabase project:** vrqwvipfcjdlqgycnhof
+- **Contact:** ypmedia.contact@gmail.com
 
-- Supabase "Confirm email" is currently OFF for easier local testing — turn it back on before treating this as production-ready for real users.
-- Feed sort/filter/sidebar have only been verified with 1-2 polls, not a larger dataset.
-- No automated tests yet.
+---
 
-## Launch checklist (as of 2026-07-24)
+## What's Built and Working
 
-**Blocking / in progress:**
-- [ ] `supabase/add_polls_update_policy.sql` — must be run in the Supabase SQL editor. `polls` only ever had SELECT/INSERT RLS policies, never UPDATE, so `CreatePollModal`'s post-upload `polls.update({media_url, media_type})` call was silently affecting 0 rows (no error thrown — RLS just filtered it out). This file adds the missing `polls_update_own` policy and backfills the one poll ("Is this guy tuff or nah?", id `90c4a211-...`) that already had its file uploaded to Storage but no `media_url` set. **Unconfirmed whether the user has run this yet.**
-- [ ] Google sign-in is throwing `{"code":400,"error_code":"validation_failed","msg":"Unsupported provider: provider is not enabled"}`. The code (`AuthContext.signInWithGoogle`, `AuthModal`'s Google button, `CompleteProfileModal`) is done and deployed, but in the Supabase dashboard the Google provider's enable toggle likely isn't actually saved as ON (Client ID/Secret may be filled in without the toggle flipped, or Save wasn't clicked). Needs to be re-checked and confirmed working end-to-end (redirect → `CompleteProfileModal` appears → username chosen → profile updates).
+### Auth
+- Email + password signup/login with Cloudflare Turnstile bot protection
+- Google OAuth login (fully working)
+- Email verification required on signup
+- CompleteProfileModal for Google users (forces username selection)
+- Ban system — banned users blocked on login + all mutations via RLS
+- Account deletion (server-side via api/delete-account.js)
+- Password change via /settings
 
-**Not yet tested:**
-- [ ] Actual video upload + autoplay-on-scroll behavior — browser automation can't drive a native file picker, so only an image upload was tested (and that one hit the RLS bug above). Needs a real manual test: upload a short video, confirm it's muted+autoplays when scrolled into view, pauses when scrolled out, and the 🔇 tap-to-unmute button works.
-- [ ] Image upload re-test after the RLS fix lands, to confirm new uploads attach correctly (not just the backfilled one).
-- [ ] Real mobile device test (only simulated 375px viewport has been verified so far).
+### Polls
+- Create polls (question, optional description, 2–6 options)
+- Searchable category selector (user-created communities)
+- Poll expiry (never / 1h / 6h / 24h / 3d / 7d)
+- Vote-to-see results toggle
+- Multi-media: up to 4 images (carousel) or 1 video
+- Voting with realtime updates (no page refresh)
+- Likes with realtime updates
+- Native share (mobile) + dropdown (desktop)
+- Report polls and comments
 
-**Before treating this as production-ready:**
-- [ ] Re-enable Supabase "Confirm email" (currently off for dev convenience — anyone can sign up with any email instantly right now).
-- [ ] Test feed sort/filter/sidebar with a larger, more realistic number of polls.
-- [ ] Consider automated tests (currently zero).
+### Feed
+- All / Following tabs
+- Sort: Hot / New / Top
+- Category filter dropdown
+- Sidebar: Live Stats, Trending TOP 5, Your Communities, + Create Community
 
-**Deferred by user choice, not blocking:**
-- PWA vs native app wrapper — user chose to finish the responsive web app first before revisiting this.
+### Social
+- Follow / unfollow users
+- Public user profiles (/u/:username)
+- User-created categories + category pages (/c/:slug)
+- Category follow system
+
+### Comments
+- Threaded replies (1 level deep, Instagram-style)
+- Report button on comments and replies
+- Admin can delete comments
+
+### Notifications
+- Bell icon with realtime updates + unread badge
+- Types: vote, like, follow, comment, reply
+- 7-day auto-hide
+- Per-type toggle settings in /settings
+
+### Search
+- Header autocomplete (polls, users, categories — 250ms debounce)
+- Full search page (/search) with tabs
+
+### Settings (/settings)
+- Account tab: change password, delete account
+- Notifications tab: per-type toggles
+- Appearance tab: light/dark mode toggle
+
+### Admin (/admin)
+- View pending/resolved/dismissed reports
+- Delete polls and comments
+- Ban/unban users
+- Banned users tab
+
+### Other
+- 404 page
+- Terms of Service (/terms)
+- Privacy Policy (/privacy) — PIPEDA compliant
+- Bug report link in footer (mailto:ypmedia.contact@gmail.com)
+- PostHog analytics
+- vercel.json SPA routing
+
+---
+
+## Security Completed
+
+- Supabase RLS on all tables
+- DB trigger: prevents self-promotion to admin / self-unban
+- DB trigger: vote option_id must belong to poll_id
+- options INSERT: only poll author can add options
+- poll_views SELECT: only poll owner can see viewer identities
+- polls.category: FK to categories(name) — no arbitrary strings
+- Rate limiting (client-side + server-side IP limit)
+- XSS sanitization via DOMPurify on all user text
+- Cloudflare Turnstile on login/signup
+- poll-media bucket: 20MB limit, restricted MIME types
+- Email verification required
+
+---
+
+## Known Gaps / Not Yet Done
+
+- sanitize() not applied to CreateCategoryModal description or ReportModal note (low risk — no dangerouslySetInnerHTML in codebase)
+- avatars bucket policy not committed to migration file (manually configured in dashboard)
+- No automated tests
+- OG meta tags for link previews not yet built
+- Recommendation algorithm / event tracking not yet built
+- PWA / push notifications not yet built
+
+---
+
+## Architecture Notes
+
+- `polls.author_id` — NOT `user_id`. Always use `author_id` for the polls table.
+- `poll_media` must always be fetched in a separate query and merged manually (PostgREST relationship embedding is unreliable — see POLLHUB_CODEX_GUIDE.md section 4-1)
+- Theme (dark/light) is stored in `profiles.theme` and applied via `document.documentElement.setAttribute('data-theme', theme)` in AuthContext
+- Banned users: `profiles.is_banned = true` → AuthContext signs them out on login; RLS policies block all mutations
+- Admin flag: `profiles.is_admin = true` → DB trigger prevents non-admins from changing this column
+
+---
+
+## Environment Variables
+
+```
+# Public (VITE_ prefix — safe for browser)
+VITE_SUPABASE_URL=https://vrqwvipfcjdlqgycnhof.supabase.co
+VITE_SUPABASE_ANON_KEY=...
+VITE_TURNSTILE_SITE_KEY=0x4AAAAAAD_rIZ3ceF1tK2SE
+VITE_POSTHOG_KEY=phc_sy6uR2QLDPQ3cEv9cnTjRXXYzPYtYmKQ4p56xFpgPAfP
+VITE_POSTHOG_HOST=https://us.i.posthog.com
+
+# Secret (Vercel env vars only — NEVER VITE_ prefix)
+TURNSTILE_SECRET_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+## Local Setup
+
+```bash
+git clone https://github.com/woohub420/Pollhub.git
+cd Pollhub
+npm install
+# Create .env with public vars above
+npm run dev   # http://localhost:5173
+```
+
+Note: `/api/*` endpoints (Turnstile verify, account deletion) only work via `vercel dev` or on the deployed Vercel URL — not with plain `npm run dev`.
