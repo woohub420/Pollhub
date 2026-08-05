@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
-import { CATEGORIES } from '../lib/constants.js'
 import PollCard from '../components/PollCard.jsx'
 import AuthModal from '../components/AuthModal.jsx'
 import CreateCategoryModal from '../components/CreateCategoryModal.jsx'
@@ -28,6 +27,7 @@ export default function Feed() {
   const [sort, setSort] = useState('hot')
   const [category, setCategory] = useState('all')
   const [followedCategories, setFollowedCategories] = useState([])
+  const [allCategories, setAllCategories] = useState([])
   const [authOpen, setAuthOpen] = useState(false)
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false)
   const [feedMode, setFeedMode] = useState('all') // 'all' | 'following'
@@ -35,6 +35,14 @@ export default function Feed() {
   useEffect(() => {
     loadPolls()
   }, [feedMode, user])
+
+  useEffect(() => {
+    async function loadCategories() {
+      const { data } = await supabase.from('categories').select('id, name, slug').order('name')
+      setAllCategories(data ?? [])
+    }
+    loadCategories()
+  }, [])
 
   useEffect(() => {
     if (!user) {
@@ -167,9 +175,9 @@ export default function Feed() {
           </div>
           <select className={styles.categorySelect} value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="all">All categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {allCategories.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name}
               </option>
             ))}
           </select>
