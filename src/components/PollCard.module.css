@@ -6,6 +6,26 @@
   margin-bottom: 16px;
 }
 
+.unlockBtn {
+  margin-top: 12px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.unlockBtn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 .meta {
   display: flex;
   gap: 10px;

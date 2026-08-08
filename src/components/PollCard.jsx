@@ -9,6 +9,8 @@ import { CheckIcon, HeartIcon, LinkIcon, ShareIcon } from './icons.jsx'
 import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import PollMedia from './PollMedia.jsx'
 import ReportModal from './ReportModal.jsx'
+import DemographicBreakdown from './DemographicBreakdown.jsx'
+import DemographicUnlockModal from './DemographicUnlockModal.jsx'
 import styles from './PollCard.module.css'
 
 export default function PollCard({ poll, onUpdate, defaultShowComments = false, showDescription = false }) {
@@ -25,6 +27,8 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
   const [likeCount, setLikeCount] = useState(0)
   const [shareMenuOpen, setShareMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [hasDemographics, setHasDemographics] = useState(false)
+  const [showDemoModal, setShowDemoModal] = useState(false)
   const shareRef = useRef(null)
 
   useEffect(() => {
@@ -63,6 +67,28 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
   useEffect(() => {
     setLocalOptions(poll.options ?? [])
   }, [poll.options])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadDemographics() {
+      if (!user) {
+        setHasDemographics(false)
+        return
+      }
+      const { data } = await supabase
+        .from('user_demographics')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (active) setHasDemographics(!!data)
+    }
+    loadDemographics()
+
+    return () => {
+      active = false
+    }
+  }, [user])
 
   useEffect(() => {
     let active = true
@@ -161,6 +187,10 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
       if (voteErr) throw voteErr
       setMyVote(optionId)
       posthog.capture('poll_voted', { poll_id: poll.id, category: poll.category, option_id: optionId })
+
+      if (!hasDemographics) {
+        setTimeout(() => setShowDemoModal(true), 800)
+      }
 
       if (poll.author_id && poll.author_id !== user.id) {
         await supabase.from('notifications').insert({
@@ -448,6 +478,21 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
           )}
         </div>
       </div>
+
+      {hasVoted && (
+        <>
+          {!hasDemographics && !showDemoModal && (
+            <button className={styles.unlockBtn} onClick={() => setShowDemoModal(true)}>
+              📊 See how your age group voted →
+            </button>
+          )}
+          <DemographicBreakdown pollId={poll.id} />
+        </>
+      )}
+
+      {showDemoModal && (
+        <DemographicUnlockModal onClose={() => setShowDemoModal(false)} onSaved={() => setHasDemographics(true)} />
+      )}
 
       {showComments && (
         <CommentSection pollId={poll.id} pollAuthorId={poll.author_id} onCommentPosted={onUpdate} />

@@ -20,7 +20,17 @@ const TABS = [
   { id: 'account', label: 'Account', icon: UserIcon },
   { id: 'notifications', label: 'Notifications', icon: BellIcon },
   { id: 'appearance', label: 'Appearance', icon: SettingsIcon },
+  { id: 'demographics', label: 'Demographics', icon: UserIcon },
 ]
+
+const GENDER_OPTIONS = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'non_binary', label: 'Non-binary' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+]
+
+const BIRTH_YEARS = Array.from({ length: 90 }, (_, i) => new Date().getFullYear() - 13 - i)
 
 const NOTIF_ITEMS = [
   { key: 'notify_vote', icon: VoteIcon, label: 'Votes', description: 'When someone votes on your poll' },
@@ -56,6 +66,12 @@ export default function SettingsPage() {
   })
   const [notifSaved, setNotifSaved] = useState(false)
 
+  const [birthYear, setBirthYear] = useState('')
+  const [gender, setGender] = useState('')
+  const [demoLoading, setDemoLoading] = useState(false)
+  const [demoError, setDemoError] = useState('')
+  const [demoSuccess, setDemoSuccess] = useState(false)
+
   useEffect(() => {
     if (!user) {
       navigate('/')
@@ -70,6 +86,22 @@ export default function SettingsPage() {
       if (data) setNotifSettings(data)
     }
     loadNotifSettings()
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    async function loadDemographics() {
+      const { data } = await supabase
+        .from('user_demographics')
+        .select('birth_year, gender')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (data) {
+        setBirthYear(data.birth_year ?? '')
+        setGender(data.gender ?? '')
+      }
+    }
+    loadDemographics()
   }, [user])
 
   async function handlePasswordChange() {
@@ -142,6 +174,40 @@ export default function SettingsPage() {
     await supabase.from('notification_settings').upsert({ user_id: user.id, ...updated })
     setNotifSaved(true)
     setTimeout(() => setNotifSaved(false), 2000)
+  }
+
+  async function handleSaveDemographics() {
+    setDemoError('')
+    setDemoSuccess(false)
+
+    if (birthYear) {
+      const age = new Date().getFullYear() - parseInt(birthYear, 10)
+      if (age < 13) {
+        setDemoError('You must be at least 13 years old to use PollHub.')
+        return
+      }
+    }
+
+    setDemoLoading(true)
+    try {
+      const { error } = await supabase.from('user_demographics').upsert(
+        {
+          user_id: user.id,
+          birth_year: birthYear ? parseInt(birthYear, 10) : null,
+          gender: gender || null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      )
+      if (error) throw error
+      setDemoSuccess(true)
+      setTimeout(() => setDemoSuccess(false), 2000)
+    } catch (err) {
+      console.error(err)
+      setDemoError('Something went wrong. Please try again.')
+    } finally {
+      setDemoLoading(false)
+    }
   }
 
   async function handleThemeChange(t) {
@@ -300,6 +366,54 @@ export default function SettingsPage() {
                   <span>Light</span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'demographics' && (
+          <div className={styles.section}>
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Your Demographics</h2>
+              <p className={styles.muted}>
+                Used only to show anonymous, aggregated poll breakdowns — never shown per-vote or shared with
+                anyone.
+              </p>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Birth Year</label>
+                <select className={styles.input} value={birthYear} onChange={(e) => setBirthYear(e.target.value)}>
+                  <option value="">Prefer not to say</option>
+                  {BIRTH_YEARS.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Gender</label>
+                <select className={styles.input} value={gender} onChange={(e) => setGender(e.target.value)}>
+                  <option value="">Prefer not to say</option>
+                  {GENDER_OPTIONS.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {demoError && <p className={styles.error}>{demoError}</p>}
+              {demoSuccess && <p className={styles.success}>✓ Saved</p>}
+
+              <button
+                className="btn btn-accent"
+                onClick={handleSaveDemographics}
+                disabled={demoLoading}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                {demoLoading ? <span className="spinner" /> : 'Save'}
+              </button>
             </div>
           </div>
         )}
