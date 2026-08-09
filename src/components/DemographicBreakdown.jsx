@@ -5,7 +5,6 @@ import styles from './DemographicBreakdown.module.css'
 const GENDER_LABELS = {
   male: 'Male',
   female: 'Female',
-  non_binary: 'Non-binary',
   prefer_not_to_say: 'Prefer not to say',
   other: 'Other',
 }
@@ -77,7 +76,7 @@ export default function DemographicBreakdown({ pollId }) {
       )}
 
       <p className={styles.disclaimer}>
-        Shown only when 20+ votes and 10+ per group. Individual votes are never shown.
+        Shown only when 10+ votes and 3+ per group. Individual votes are never shown.
       </p>
     </div>
   )
