@@ -393,7 +393,7 @@ export default function SettingsPage() {
               <div className={styles.field}>
                 <label className={styles.label}>Gender</label>
                 <select className={styles.input} value={gender} onChange={(e) => setGender(e.target.value)}>
-                  <option value="">Prefer not to say</option>
+                  <option value="" disabled hidden></option>
                   {GENDER_OPTIONS.map((g) => (
                     <option key={g.value} value={g.value}>
                       {g.label}
