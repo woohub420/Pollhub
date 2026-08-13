@@ -6,8 +6,8 @@ import styles from './Modal.module.css'
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY
 
 export default function AuthModal({ onClose }) {
-  const { signIn, signUp, signInWithGoogle } = useAuth()
-  const [mode, setMode] = useState('login') // 'login' | 'signup'
+  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
+  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -15,6 +15,10 @@ export default function AuthModal({ onClose }) {
   const [submitting, setSubmitting] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileKey, setTurnstileKey] = useState(0)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetError, setResetError] = useState('')
 
   function validateSignup() {
     const clean = username.toLowerCase().trim()
@@ -33,6 +37,24 @@ export default function AuthModal({ onClose }) {
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
       console.error(err)
+    }
+  }
+
+  async function handleForgotPassword() {
+    if (!resetEmail.trim()) {
+      setResetError('Please enter your email')
+      return
+    }
+    setResetLoading(true)
+    setResetError('')
+    try {
+      await resetPassword(resetEmail.trim())
+      setResetSent(true)
+    } catch (err) {
+      setResetError('Something went wrong. Please try again.')
+      console.error(err)
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -92,6 +114,59 @@ export default function AuthModal({ onClose }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
+        {mode === 'forgot' ? (
+          <div className={styles.forgotView}>
+            {resetSent ? (
+              <>
+                <div className={styles.successIcon}>📧</div>
+                <h2 className={styles.title}>Check your email</h2>
+                <p className={styles.subtitle}>
+                  We sent a password reset link to <strong>{resetEmail}</strong>. Check your inbox and follow the
+                  link.
+                </p>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    setMode('login')
+                    setResetSent(false)
+                  }}
+                >
+                  Back to login
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className={styles.title}>Reset your password</h2>
+                <p className={styles.subtitle}>Enter your email and we'll send you a reset link.</p>
+                <div className={styles.field}>
+                  <label className={styles.label}>Email</label>
+                  <input
+                    className={styles.input}
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
+                  />
+                </div>
+                {resetError && <p className={styles.error}>{resetError}</p>}
+                <div className={styles.actionsRow}>
+                  <button className="btn btn-ghost" onClick={() => setMode('login')}>
+                    Back
+                  </button>
+                  <button
+                    className="btn btn-accent"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading || !resetEmail.trim()}
+                  >
+                    {resetLoading ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <>
         <h2 className={styles.title}>{mode === 'login' ? 'Log in' : 'Sign up'}</h2>
 
         {error && <div className={styles.error}>{error}</div>}
@@ -130,6 +205,18 @@ export default function AuthModal({ onClose }) {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {mode === 'login' && (
+              <button
+                type="button"
+                className={styles.forgotLink}
+                onClick={() => {
+                  setMode('forgot')
+                  setResetError('')
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
 
           {TURNSTILE_SITE_KEY && (
@@ -194,6 +281,8 @@ export default function AuthModal({ onClose }) {
             </>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   )

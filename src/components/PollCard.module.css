@@ -194,23 +194,6 @@
   color: var(--green);
 }
 
-.shareWrapper {
-  position: relative;
-}
-
-.shareDropdown {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  min-width: 160px;
-  overflow: hidden;
-}
-
 .menuWrapper {
   position: relative;
   margin-left: auto;

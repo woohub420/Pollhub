@@ -143,6 +143,18 @@ export function AuthProvider({ children }) {
     if (user) await loadProfile(user.id)
   }
 
+  async function resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
+  async function updatePassword(password) {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
@@ -150,7 +162,18 @@ export function AuthProvider({ children }) {
     if (import.meta.env.VITE_POSTHOG_KEY) posthog.reset()
   }
 
-  const value = { user, profile, loading, signIn, signUp, signInWithGoogle, signOut, refreshProfile }
+  const value = {
+    user,
+    profile,
+    loading,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signOut,
+    refreshProfile,
+    resetPassword,
+    updatePassword,
+  }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
