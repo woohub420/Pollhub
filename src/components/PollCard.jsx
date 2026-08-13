@@ -262,12 +262,13 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
 
   async function handleShare() {
     const url = `${window.location.origin}/poll/${poll.id}`
+    const isMobile = window.innerWidth <= 768
 
-    if (navigator.share) {
+    if (isMobile && navigator.share) {
       try {
         await navigator.share({ title: poll.question, url })
         posthog.capture('poll_shared', { poll_id: poll.id, method: 'native' })
-      } catch (err) {
+      } catch {
         // User cancelled the share sheet — nothing to do
       }
       return
