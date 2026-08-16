@@ -5,6 +5,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import AuthorLine from './AuthorLine.jsx'
 import CommentSection from './CommentSection.jsx'
+import EditPollModal from './EditPollModal.jsx'
 import { CheckIcon, HeartIcon, ShareIcon } from './icons.jsx'
 import { checkRateLimit, LIMITS } from '../lib/rateLimit.js'
 import PollMedia from './PollMedia.jsx'
@@ -22,6 +23,7 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
   const [showComments, setShowComments] = useState(defaultShowComments)
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [localOptions, setLocalOptions] = useState(poll.options ?? [])
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
@@ -321,6 +323,17 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
                   🚩 Report
                 </div>
               )}
+              {profile?.is_admin && (
+                <div
+                  className={styles.menuItem}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setEditOpen(true)
+                  }}
+                >
+                  ✏️ Edit Poll
+                </div>
+              )}
               {(profile?.is_admin || user?.id === poll.author_id) && (
                 <div
                   className={`${styles.menuItem} ${styles.menuItemDanger}`}
@@ -440,6 +453,17 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
 
       {showComments && (
         <CommentSection pollId={poll.id} pollAuthorId={poll.author_id} onCommentPosted={onUpdate} />
+      )}
+
+      {editOpen && (
+        <EditPollModal
+          pollId={poll.id}
+          onClose={() => setEditOpen(false)}
+          onUpdated={() => {
+            setEditOpen(false)
+            onUpdate?.()
+          }}
+        />
       )}
     </div>
   )

@@ -10,7 +10,7 @@ import styles from './UserProfilePage.module.css'
 
 export default function UserProfilePage() {
   const { username } = useParams()
-  const { user } = useAuth()
+  const { user, profile: viewerProfile } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [polls, setPolls] = useState([])
@@ -20,6 +20,7 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState('')
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -147,6 +148,47 @@ export default function UserProfilePage() {
     }
   }
 
+  async function handleAdminAvatarUpload(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !profile) return
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Avatar must be 5MB or smaller.')
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('JPG, PNG, or WebP only.')
+      return
+    }
+
+    setError('')
+    setAvatarUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${profile.id}/avatar.${ext}`
+      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (uploadErr) throw uploadErr
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(path)
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`
+
+      const { error: updateErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: urlWithCacheBust })
+        .eq('id', profile.id)
+      if (updateErr) throw updateErr
+
+      await loadProfile()
+    } catch (err) {
+      console.error(err)
+      setError('Something went wrong uploading their avatar.')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   if (loading)
     return (
       <div className={styles.center}>
@@ -168,6 +210,18 @@ export default function UserProfilePage() {
         <div className={styles.avatarBox}>
           <UserAvatar username={profile.username} avatarUrl={profile.avatar_url} size={72} />
         </div>
+        {viewerProfile?.is_admin && !isOwnProfile && (
+          <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+            {avatarUploading ? <span className="spinner" /> : '✏️ Change avatar (Admin)'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAdminAvatarUpload}
+              disabled={avatarUploading}
+              style={{ display: 'none' }}
+            />
+          </label>
+        )}
         <h2 className={styles.username}>{profile.username}</h2>
         <p className={styles.joined}>
           Member since {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '...'}
