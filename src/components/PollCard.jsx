@@ -14,6 +14,23 @@ import DemographicBreakdown from './DemographicBreakdown.jsx'
 import DemographicUnlockModal from './DemographicUnlockModal.jsx'
 import styles from './PollCard.module.css'
 
+function formatPostedAt(createdAt) {
+  const postedAt = new Date(createdAt)
+  if (Number.isNaN(postedAt.getTime())) return ''
+
+  const ageMinutes = Math.max(0, Math.floor((Date.now() - postedAt.getTime()) / 60000))
+  if (ageMinutes < 1) return 'Just now'
+  if (ageMinutes < 60) return `${ageMinutes}m ago`
+
+  const ageHours = Math.floor(ageMinutes / 60)
+  if (ageHours < 24) return `${ageHours}h ago`
+  if (ageHours < 48) return 'Yesterday'
+
+  const options = { month: 'short', day: 'numeric' }
+  if (postedAt.getFullYear() !== new Date().getFullYear()) options.year = 'numeric'
+  return postedAt.toLocaleDateString(undefined, options)
+}
+
 export default function PollCard({ poll, onUpdate, defaultShowComments = false, showDescription = false }) {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
@@ -305,6 +322,15 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
           {poll.category}
         </span>
         <AuthorLine username={poll.profiles?.username ?? 'unknown'} avatarUrl={poll.profiles?.avatar_url} />
+        {formatPostedAt(poll.created_at) && (
+          <time
+            className={styles.postedAt}
+            dateTime={poll.created_at}
+            title={new Date(poll.created_at).toLocaleString()}
+          >
+            {formatPostedAt(poll.created_at)}
+          </time>
+        )}
 
         <div className={styles.menuWrapper}>
           <button className={styles.menuBtn} onClick={() => setMenuOpen((o) => !o)}>

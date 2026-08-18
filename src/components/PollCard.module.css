@@ -42,6 +42,16 @@
   font-weight: 600;
 }
 
+.postedAt {
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.postedAt::before {
+  content: '\00b7';
+  margin-right: 10px;
+}
+
 .question {
   display: block;
   font-size: 1.05rem;
