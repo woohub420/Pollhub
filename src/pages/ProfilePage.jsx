@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import PollCard from '../components/PollCard.jsx'
 import UserAvatar from '../components/UserAvatar.jsx'
-import { CommentIcon, EyeIcon, HeartIcon, VoteIcon } from '../components/icons.jsx'
+import { CommentIcon, HeartIcon, VoteIcon } from '../components/icons.jsx'
 import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -19,8 +19,6 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [polls, setPolls] = useState([])
   const [totalLikes, setTotalLikes] = useState(0)
-  const [viewMap, setViewMap] = useState({})
-  const [totalViews, setTotalViews] = useState(0)
 
   useEffect(() => {
     if (searchParams.get('edit') === 'true') {
@@ -86,19 +84,6 @@ export default function ProfilePage() {
     const merged = (pollsData ?? []).map((p) => ({ ...p, poll_media: mediaMap[p.id] ?? [] }))
     setPolls(merged)
     setTotalLikes(merged.reduce((sum, p) => sum + (p.like_count?.[0]?.count ?? 0), 0))
-
-    if (pollIds.length > 0) {
-      const { data: viewData } = await supabase.from('poll_views').select('poll_id').in('poll_id', pollIds)
-      const map = {}
-      ;(viewData ?? []).forEach((v) => {
-        map[v.poll_id] = (map[v.poll_id] ?? 0) + 1
-      })
-      setViewMap(map)
-      setTotalViews((viewData ?? []).length)
-    } else {
-      setViewMap({})
-      setTotalViews(0)
-    }
   }
 
   async function handleAvatarUpload(e) {
@@ -221,7 +206,6 @@ export default function ProfilePage() {
 
         <div className={styles.statsRow}>
           <span>{polls.length} Polls</span>
-          <span>{totalViews.toLocaleString()} Views</span>
           <span>{totalLikes} Likes</span>
           <span>{followerCount} Followers</span>
           <span>{followingCount} Following</span>
@@ -268,9 +252,6 @@ export default function ProfilePage() {
               <div key={poll.id} className={styles.pollWithStats}>
                 <PollCard poll={poll} onUpdate={loadPolls} />
                 <div className={styles.pollStats}>
-                  <span>
-                    <EyeIcon size={13} /> {(viewMap[poll.id] ?? 0).toLocaleString()} views
-                  </span>
                   <span>
                     <HeartIcon size={13} /> {poll.like_count?.[0]?.count ?? 0} likes
                   </span>
