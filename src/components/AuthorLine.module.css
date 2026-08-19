@@ -9,3 +9,14 @@
   color: var(--text2);
   font-weight: 500;
 }
+
+.botBadge {
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  color: var(--text3);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 1px 5px;
+  text-transform: uppercase;
+}

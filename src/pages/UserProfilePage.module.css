@@ -33,6 +33,19 @@
   margin: 0 0 4px;
 }
 
+.botBadge {
+  display: inline-block;
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  color: var(--text3);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+}
+
 .joined {
   color: var(--text2);
   font-size: 0.85rem;

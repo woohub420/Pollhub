@@ -29,7 +29,7 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
     try {
       const { data, error: fetchErr } = await supabase
         .from('comments')
-        .select('id, body, created_at, parent_id, author_id, profiles(username, avatar_url)')
+        .select('id, body, created_at, parent_id, author_id, profiles(username, avatar_url, is_bot)')
         .eq('poll_id', pollId)
         .order('created_at', { ascending: true })
       if (fetchErr) throw fetchErr
@@ -126,7 +126,7 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
       const { data, error: insertErr } = await supabase
         .from('comments')
         .insert({ poll_id: pollId, author_id: user.id, body: trimmed, parent_id: parentComment.id })
-        .select('id, body, created_at, parent_id, author_id, profiles(username, avatar_url)')
+        .select('id, body, created_at, parent_id, author_id, profiles(username, avatar_url, is_bot)')
         .maybeSingle()
       if (insertErr) throw insertErr
 
@@ -189,6 +189,7 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
                   <AuthorLine
                     username={comment.profiles?.username ?? 'unknown'}
                     avatarUrl={comment.profiles?.avatar_url}
+                    isBot={comment.profiles?.is_bot}
                   />
                   <div className={styles.commentMenu}>
                     <button
@@ -245,6 +246,7 @@ export default function CommentSection({ pollId, pollAuthorId, onCommentPosted }
                     <AuthorLine
                       username={reply.profiles?.username ?? 'unknown'}
                       avatarUrl={reply.profiles?.avatar_url}
+                      isBot={reply.profiles?.is_bot}
                     />
                     <div className={styles.commentMenu}>
                       <button

@@ -321,7 +321,11 @@ export default function PollCard({ poll, onUpdate, defaultShowComments = false, 
         >
           {poll.category}
         </span>
-        <AuthorLine username={poll.profiles?.username ?? 'unknown'} avatarUrl={poll.profiles?.avatar_url} />
+        <AuthorLine
+          username={poll.profiles?.username ?? 'unknown'}
+          avatarUrl={poll.profiles?.avatar_url}
+          isBot={poll.profiles?.is_bot}
+        />
         {formatPostedAt(poll.created_at) && (
           <time
             className={styles.postedAt}

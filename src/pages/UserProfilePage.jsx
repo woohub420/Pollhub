@@ -33,7 +33,7 @@ export default function UserProfilePage() {
     try {
       const { data: profileData, error: profileErr } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, created_at')
+        .select('id, username, avatar_url, created_at, is_bot')
         .eq('username', username)
         .maybeSingle()
       if (profileErr) throw profileErr
@@ -49,7 +49,7 @@ export default function UserProfilePage() {
           `
           id, question, category, created_at, author_id, media_url, media_type,
           expires_at,
-          profiles(username, avatar_url),
+          profiles(username, avatar_url, is_bot),
           options(id, label, position, vote_count:votes(count)),
           comment_count:comments(count),
           like_count:likes(count)
@@ -223,6 +223,7 @@ export default function UserProfilePage() {
           </label>
         )}
         <h2 className={styles.username}>{profile.username}</h2>
+        {profile.is_bot && <span className={styles.botBadge}>Automated account</span>}
         <p className={styles.joined}>
           Member since {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '...'}
         </p>
